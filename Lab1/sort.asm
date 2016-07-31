@@ -1,17 +1,6 @@
 ORG 0000H
 LJMP MAIN
 
-;R0 and R1 should contain the address of two no.s
-;location given by R0:- 	MSB of 1st no.
-;location given by R0+1:-	LSB of 1st no.
-;location given by R1:- 	MSB of 1st no.
-;location given by R1+1:-	LSB of 1st no.
-;location given by R0+2:- 	CARRY	
-;location given by R0+3:-	MSB OF ANS	
-;location given by R0+4:- 	LSB OF ANS
-
-;---------------------------------------------------------;
-;this function adds and stores result in appropriate location
 SORT:
 	MOV R0,#60h
 	MOV R1,#70h
