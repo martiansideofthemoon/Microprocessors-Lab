@@ -38,7 +38,6 @@ NO_SWAP:
 	RET
 
 INIT:
-	;-- store the numbers to be added/subtracted at appropriate location
 	MOV 60h,#0AAh
 	MOV 61h,#0BBh
 	MOV 62h,#0CCh
