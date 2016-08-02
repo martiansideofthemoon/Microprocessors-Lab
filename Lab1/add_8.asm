@@ -14,10 +14,12 @@ INIT:
 	MOV 60h, #40h ;Loading the second value
 	RET
 
-
 ORG 0100H
 MAIN:
 	MOV SP,#0C0H
-	ACALL INIT 		 ;Loading the values in memory
+	;ACALL INIT 		 ;Loading the values in memory
 	ACALL ADDER_8BIT ;Adding the two values
-END
+
+
+A1:  
+	SJMP A1

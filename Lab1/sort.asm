@@ -37,7 +37,7 @@ NO_SWAP:
 	RETURN:
 	RET
 
-INIT:
+INIT:               ;initializing the various registers
 	MOV 60h,#0AAh
 	MOV 61h,#0BBh
 	MOV 62h,#0CCh
@@ -49,6 +49,8 @@ INIT:
 ORG 0100H
 MAIN:
 	MOV SP,#0C0H	;move stack pointer to indirect RAM location
-	ACALL INIT
+	;ACALL INIT
 	ACALL SORT
+A1:  
+	SJMP A1
 END

@@ -5,25 +5,23 @@ ADDER_N:
 	MOV A,50h        ;Loading the value of n
 	ANL A,#0FFh      ;Checking if n=0
 	JZ RETURN        ;Quitting subroutine if n=0
-	MOV SP,#50h      ;Setting stack pointer
-	MOV R0, A        ;Loading R0 with n
+	MOV R0, #50h
+	MOV R2, A        ;Loading R0 with n
 	MOV R1,#01h      ;Setting the first addend, R1 with 1
 	CLR A            ;Setting A=0
 	
 	ADD_NEXT:
 		ADD A,R1     ;Adding A with R1
-		PUSH ACC     ;Storing A in next memory location
+		MOV @R0,A    ;Storing A in next memory location
+		INC R0		 ;Increment memory location
 		INC R1       ;Incrementing R1
-	DJNZ R0,ADD_NEXT ;Decrementing R0 till we hit zero
+	DJNZ R2,ADD_NEXT ;Decrementing R0 till we hit zero
 	
 	RETURN:
-	CLR A
-	CLR R0
-	CLR R1
 	RET
 
 INIT:
-	MOV 50h, #03h ;Deciding the value of n in memory
+	MOV 50h, #10h ;Deciding the value of n in memory
 	RET
 
 
@@ -32,4 +30,6 @@ MAIN:
 	MOV SP,#0C0H
 	ACALL INIT    ;Initializing the memory with n
 	ACALL ADDER_N ;Adding natural numbers from 1 to n
+A1:  
+	SJMP A1
 END

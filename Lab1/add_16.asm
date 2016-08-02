@@ -64,6 +64,7 @@ INIT:
 ORG 0100H
 MAIN:
 	MOV SP,#0C0H	;move stack pointer to indirect RAM location
-	ACALL INIT
+	;ACALL INIT
 	ACALL ADDER_16BIT
-END
+A1:  
+	SJMP A1
