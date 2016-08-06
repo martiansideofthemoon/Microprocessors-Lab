@@ -9,32 +9,38 @@ ORG 100H
 		PUSH AR0
 		PUSH AR1
 		PUSH AR2
-		PUSH AR3
 		PUSH ACC
-		PUSH B
 		MOV R2, 50h
 		MOV R1, 51h
 		MOV R0, 52h
 		REPEAT:
 			MOV A,@R1
+			ANL A,#0F0h
+			RR A
+			RR A
+			RR A
+			RR A
+			CJNE A, #0Ah, NEXT3
+			NEXT3:
+				JC NUMBER3
+				ADD A,#07h
+			NUMBER3:
+			ADD A,#30h
+			MOV @R0,A
+			INC R0
+			MOV A,@R1
+			ANL A,#0Fh
+			CJNE A, #0Ah, NEXT4
+			NEXT4:
+				JC NUMBER4
+				ADD A,#07h
+			NUMBER4:
+			ADD A,#30h
+			MOV @R0,A
+			INC R0
 			INC R1
-			MOV B,#10
-			DIV AB
-			MOV R3,B
-			MOV B,#10
-			DIV AB
-			MOV A,B
-			ADD A,#30h
-			MOV @R0,A
-			INC R0
-			MOV A,R3
-			ADD A,#30h
-			MOV @R0,A
-			INC R0
 			DJNZ R2,REPEAT
-		POP B
 		POP ACC
-		POP AR3
 		POP AR2
 		POP AR1
 		POP AR0
