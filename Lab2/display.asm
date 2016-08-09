@@ -35,7 +35,7 @@ DELAY:
 		MOV R1, 51h
 		REPEAT:
 			MOV A, @R1
-			ANL A, #00Fh
+			ANL A, #0Fh
 			RL A
 			RL A
 			RL A

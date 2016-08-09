@@ -18,6 +18,7 @@ LJMP MAIN
 			RR A
 			RR A
 			RR A
+			;SWAPA
 			CJNE A, #0Ah, NEXT3
 			NEXT3:
 				JC NUMBER3
@@ -144,13 +145,17 @@ display:
 		PUSH ACC
 		MOV R2, 50h
 		MOV R1, 51h
-		REPEAT3:
+		REPEAT5:
 			MOV A, @R1
-			ANL A, #0F0h
+			ANL A, #0Fh
+			RL A
+			RL A
+			RL A
+			RL A
 			MOV LED, A
 			LCALL DELAY
 			INC R1
-			DJNZ R2, REPEAT3
+			DJNZ R2, REPEAT5
 		POP ACC
 		POP AR2
 		POP AR1
