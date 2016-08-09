@@ -35,7 +35,11 @@ DELAY:
 		MOV R1, 51h
 		REPEAT:
 			MOV A, @R1
-			ANL A, #0F0h
+			ANL A, #00Fh
+			RL A
+			RL A
+			RL A
+			RL A
 			MOV LED, A
 			LCALL DELAY
 			INC R1
