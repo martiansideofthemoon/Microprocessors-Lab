@@ -10,7 +10,7 @@ DELAY:
         PUSH AR1	; STORE R1 (BANK O) ON THE STACK
         PUSH AR2
 		PUSH AR3
-		MOV R3,#20
+
 		BACK0:
 			MOV R2,#200
 			BACK1:
@@ -19,6 +19,7 @@ DELAY:
 					DJNZ R1, BACK2
 				DJNZ R2, BACK1
 			DJNZ R3, BACK0
+
 		POP AR3
 		POP AR2
         POP AR1
