@@ -36,36 +36,6 @@ sec1:
 	djnz r4,sec1
 	pop ar4
 	ret
-
-displayValues:
-	using 0
-	push acc
-	push ar1
-	mov led, #0A0h
-	acall delay_5s
-loop_display:
-	mov r1, 51h
-	mov a, 50h
-	mov led, #0F0h
-	acall delay_1s
-	acall delay_1s
-	acall readnibble
-	mov led, #00h
-	acall delay_1s
-	cjne a, 4fh, check_index
-	sjmp exit_display
-check_index:
-	jc exit_display
-	mov a, r1
-	add a, 4fh
-	mov r1, a
-	acall lcd_sendbyte
-	sjmp loop_display
-exit_display:
-	acall lcd_init
-	pop ar1
-	pop acc
-	ret
 	
 lcd_sendbyte:
 	push acc
@@ -74,42 +44,25 @@ lcd_sendbyte:
 	pop acc
 	ret
 
-readValues:
-	using 0
-	push ar0
-	push ar1
-	mov led, #0B0h
+readSwitches:
+	mov led, #0A0h
 	acall delay_5s
-	mov r0, 50h	
-	mov r1, 51h
-loop_read:
-	acall packnibbles
-	mov @r1, 4fh
-	inc r1
-	djnz r0, loop_read
-	pop ar1
-	pop ar0
-	ret
-
-packnibbles:
-	push acc
-	mov led, #0F0h
-	acall delay_5s
+	mov led, #00h
+	acall delay_1s
 	acall readnibble
 	mov a, 4fh
-	swap a
-	mov led, #00h
+	mov led, #0FFh
 	acall delay_1s
-	mov led, #0F0h
-	acall delay_5s
 	acall readnibble
+	cjne a, 4fh, error
+	swap a
+	mov r1, a
 	mov led, #00h
-	acall delay_1s
-	add a, 4fh
-	mov 4fh, a
-	pop acc
 	ret
-
+error:
+	mov led, #10h
+	ret
+	
 readnibble:
 	push acc
 	orl switches,#0fh	; 1 for input
@@ -119,14 +72,61 @@ readnibble:
 	pop acc
 	ret
 
+displayEight:
+	  using 0
+	  push acc
+	  push ar2
+	  mov a,#80h
+	  acall lcd_command	 ;send command to LCD
+	  acall delay
+	  mov r2, #04h
+repeat_display:
+	  acall lcd_sendbyte
+	  inc r1
+	  djnz r2, repeat_display
+	  mov a,#0C0h
+	  acall lcd_command	 ;send command to LCD
+	  acall delay
+	  mov r2, #04h
+repeat_display2:
+	  acall lcd_sendbyte
+	  inc r1
+	  djnz r2, repeat_display2
+	  pop ar2
+	  pop acc
+	  ret
+	  
+
+write_memory:
+	clr   a
+	movc  a,@a+dptr
+	mov @r1, a
+	jz    exit_write
+	inc   dptr
+	inc   r1
+	sjmp  write_memory
+exit_write:
+	ret
+
 org 200h
 start:
-	  mov 50h, #02h
-	  mov 51h, #52h
+	  mov dptr, #my_string1
+	  mov R1, #70h
+	  acall write_memory
       acall lcd_setup
-	  acall readValues
-	  acall displayValues
 
+procedure:
+	  acall readSwitches ;Stored in r1
+	  mov a, led
+	  anl a, #0F0h
+	  cjne a, #10h, continue
+	  sjmp here
+continue:
+	  acall displayEight ;Starting from r1
+	  acall delay_5s
+	  acall displayEight
+	  acall delay_5s
+	  sjmp procedure
 here: sjmp here				//stay here 
 
 lcd_setup:
@@ -146,7 +146,7 @@ lcd_setup:
 	  acall delay
 	  acall delay
 	  acall delay
-	  mov a,#80h		 ;Put cursor on first row,5 column
+	  mov a,#80h
 	  acall lcd_command	 ;send command to LCD
 	  acall delay
 	  ret
@@ -238,7 +238,7 @@ loop2:	 mov r1,#255
 ;------------- ROM text strings---------------------------------------------------------------
 org 300h
 my_string1:
-         DB   "EE337 - Lab 2", 00H
+         DB   "ABCDEFGHIJKLMNOP", 00H
 my_string2:
 		 DB   "Kalpesh Krishna", 00H
 end
