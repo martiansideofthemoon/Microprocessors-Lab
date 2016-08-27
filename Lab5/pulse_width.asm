@@ -120,7 +120,7 @@ lcd_sendbyte:
 	pop acc
 	ret
 
-org 100h
+org 150h
 main:
 	;CLR P3.2
 	acall lcd_setup
