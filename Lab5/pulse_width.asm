@@ -24,7 +24,7 @@ isr_timer0:
 	SETB TR0
 	reti
 
-	bin2ascii:
+bin2ascii:
 	USING 0
 		PUSH PSW
 		PUSH AR0
@@ -69,6 +69,7 @@ isr_timer0:
 		RET
 
 pulse_width:
+	JNB IE0, pulse_width ;Accounting for initial positive value
 	MOV TMOD, #09h
 	SETB IT0
 	CLR IE0
