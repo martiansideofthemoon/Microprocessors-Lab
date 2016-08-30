@@ -13,6 +13,7 @@ org 50h
 isr_ext0:
 	mov r2, #00h
 	CLR TR0
+	CLR EA
 	reti
 	
 isr_timer0:
@@ -69,16 +70,25 @@ bin2ascii:
 		RET
 
 pulse_width:
-	JNB IE0, pulse_width ;Accounting for initial positive value
+	MOV P1, #0A0h
+	;SETB P3.2
+	MOV R1, #00h
+	MOV TH0, #00h
+	MOV TL0, #00h
 	MOV TMOD, #09h
-	SETB IT0
-	CLR IE0
-	MOV IP, #01h
-	MOV IE, #83h
 	MOV R2, #01h ;check register
+	SETB IT0
+here1:
+	JB P3.2, here1 ;Accounting for initial positive value
+	;MOV P1, #0B0h
 	SETB TR0
+	CLR IE0
+	;MOV IP, #01h
+	MOV IE, #83h
+	
 loop:
 	CJNE R2, #00h, loop
+	MOV P1, #0C0h
 	mov 2, R1
 	mov a,#80h		 ;Put cursor on first row,5 column
 	acall lcd_command	 ;send command to LCD

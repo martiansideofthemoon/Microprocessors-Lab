@@ -23,7 +23,9 @@ poll:
 
 org 100h
 main:
+	CLR P1.7
 	acall delay_1s
+	SETB P1.7
 stop:
 	sjmp stop
 
