@@ -1,0 +1,11 @@
+"main.obj",
+"usb_task.obj",
+"scheduler.obj",
+"timer_soft.obj",
+"usb_cdc_enum.obj",
+"usb_drv.obj",
+"uart_lib.obj",
+"uart_usb_lib.obj" 
+TO "usb_cdc.aof" 
+RAMSIZE(256) 
+DISABLEWARNING (16) 

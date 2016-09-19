@@ -1,0 +1,524 @@
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE USB_DRV
+OBJECT MODULE PLACED IN usb_drv.obj
+COMPILER INVOKED BY: C:\Keil123\C51\BIN\C51.exe lib_mcu\usb\usb_drv.c LARGE OPTIMIZE(9,SPEED) BROWSE INCDIR(.\;.\;.\) DE
+                    -FINE(KEIL) DEBUG OBJECTEXTEND PRINT(.\usb_drv.lst) TABS(2) OBJECT(usb_drv.obj)
+
+line level    source
+
+   1          /*C**************************************************************************
+   2          * NAME:         usb_drv.c
+   3          *----------------------------------------------------------------------------
+   4          * Copyright (c) 2004 Atmel.
+   5          *----------------------------------------------------------------------------
+   6          * RELEASE:      c5131-usb-cdc-1_2_1      
+   7          * REVISION:     1.9     
+   8          *----------------------------------------------------------------------------
+   9          * PURPOSE: 
+  10          * This file contains the USB driver routines.
+  11          *****************************************************************************/
+  12          
+  13          /*_____ I N C L U D E S ____________________________________________________*/
+  14          
+  15          #include "config.h"
+  16          #include "usb_drv.h"
+  17          
+  18          /*_____ M A C R O S ________________________________________________________*/
+  19          
+  20          
+  21          /*_____ D E F I N I T I O N ________________________________________________*/
+  22          /* --------------------------------------------------------------------------------------------------
+  23          |Xtal frequency  ||  6 MHz |  8 MHz | 12 MHz | 16 MHz | 20 MHz | 24 MHz | 32 MHz | 40 MHz | 48 MHz |
+  24           --------------------------------------------------------------------------------------------------
+  25          |Pll % value (n) ||   1    |   1    |   1    |   1    |   5    |   1    |   2    |   10   |disabled|
+  26          |Pll x value (r) ||   8    |   6    |   4    |   3    |   12   |   2    |   3    |   12   |disabled|
+  27          |PLLDIV value    ||  70h   |  50h   |  30h   |  20  h |  B4h   |  10h   |  21h   |  B9h   |disabled|
+  28          |  [r,n]         ||        |        |        |        |        |        |        |        |        |
+  29           --------------------------------------------------------------------------------------------------
+  30          |Timer load X1   ||   600  |   800  |  1200  |  1600  |  2000  |  2400  |  3200  |  4000  |  4800  |
+  31          |Timer TH0-TH1 X1|| FD-A7h | FC-DFh | FB-4Fh | F9-BFh | F8-2Fh | F6-9Fh | F3-7Fh | F0-5Fh | ED-3Fh |
+  32          |Timer load X2   ||  1200  |  1600  |  2400  |  3200  |  4000  |  4800  |   na   |   na   |   na   |
+  33          |Timer TH0-TH1 X2|| FB-4Fh | F9-BFh | F6-9Fh | F3-7Fh | F0-5Fh | ED-3Fh |   na   |   na   |   na   |   
+  34           --------------------------------------------------------------------------------------------------
+  35          */
+  36          #if FOSC == 0000
+                code char pll_value[8] = {0x70,0x50,0x30,0x20,0xB4,0x10,0x21,0xB9};
+                code char TH0_value[9] = {0xFD,0xFC,0xFB,0xF9,0xF8,0xF6,0xF3,0xF0,0xED};
+                code char TL0_value[9] = {0xA7,0xDF,0x4F,0xBF,0x2F,0x9F,0x7F,0x5F,0x3F};
+              #endif
+  41          /*_____ D E C L A R A T I O N ______________________________________________*/
+  42          
+  43          /*F**************************************************************************
+  44          * NAME: usb_configure_endpoint 
+  45          *----------------------------------------------------------------------------
+  46          * PARAMS:
+  47          * ep_num:   Number of the endpoint to configure
+  48          * ep_type:  Type to configure
+  49          *           The possible types are:
+  50          *                CONTROL
+  51          *                BULK_IN
+  52          *                BULK_OUT
+  53          *                INTERRUPT_IN
+  54          *                INTERRUPT_OUT
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 2   
+
+  55          *                ISOCHRONOUS_IN
+  56          *                ISOCHRONOUS_OUT
+  57          * return:   none
+  58          *----------------------------------------------------------------------------
+  59          * PURPOSE: 
+  60          * This function configures an endpoint with the selected type.
+  61          *----------------------------------------------------------------------------
+  62          * EXAMPLE:
+  63          * usb_configure_endpoint(0,CONTROL);
+  64          *----------------------------------------------------------------------------
+  65          * NOTE:
+  66          * The endpoint 0 shall always be configured in CONTROL type.
+  67          *----------------------------------------------------------------------------
+  68          * REQUIREMENTS: 
+  69          *****************************************************************************/
+  70          void usb_configure_endpoint (Uchar ep_num, Uchar ep_type)
+  71          {
+  72   1        Usb_select_ep(ep_num);
+  73   1        Usb_configure_ep_type(ep_type); 
+  74   1      }
+  75          
+  76          /*F**************************************************************************
+  77          * NAME: usb_select_endpoint_interrupt
+  78          *----------------------------------------------------------------------------
+  79          * PARAMS:
+  80          * return:   endpoint number
+  81          *----------------------------------------------------------------------------
+  82          * PURPOSE: 
+  83          * This function select the endpoint where an event occurs and returns the
+  84          * number of this endpoint. If no event occurs on the endpoints, this
+  85          * function returns 0.
+  86          *----------------------------------------------------------------------------
+  87          * EXAMPLE:
+  88          *----------------------------------------------------------------------------
+  89          * NOTE:
+  90          *----------------------------------------------------------------------------
+  91          * REQUIREMENTS: 
+  92          *****************************************************************************/
+  93          Uchar usb_select_enpoint_interrupt(void)
+  94          {
+  95   1        if (EP0INT)       { Usb_select_ep(0); }
+  96   1        else if (EP1INT)  { Usb_select_ep(1); }
+  97   1        else if (EP2INT)  { Usb_select_ep(2); }
+  98   1        else if (EP3INT)  { Usb_select_ep(3); }
+  99   1        else if (EP4INT)  { Usb_select_ep(4); }
+ 100   1        else if (EP5INT)  { Usb_select_ep(5); }
+ 101   1        else if (EP6INT)  { Usb_select_ep(6); }
+ 102   1      
+ 103   1        return (UEPNUM);
+ 104   1      }
+ 105          
+ 106          
+ 107          /*F**************************************************************************
+ 108          * NAME: usb_get_nb_byte 
+ 109          *----------------------------------------------------------------------------
+ 110          * PARAMS:
+ 111          * return:   number of byte stored in the currently selected endpoint
+ 112          *----------------------------------------------------------------------------
+ 113          * PURPOSE: 
+ 114          * This function returns the number of byte stored in the currently selected
+ 115          * endpoint.
+ 116          *----------------------------------------------------------------------------
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 3   
+
+ 117          * EXAMPLE:
+ 118          *----------------------------------------------------------------------------
+ 119          * NOTE:
+ 120          * This function shall be launched only for OUT endpoints after each receipt
+ 121          * and before any other operation.
+ 122          * This function shall not be used if the declared FIFO size is more than
+ 123          * 255 bytes. In this case, use the usb_get_nb_byte_epw function.  
+ 124          *----------------------------------------------------------------------------
+ 125          * REQUIREMENTS: 
+ 126          *****************************************************************************/
+ 127          Uchar usb_get_nb_byte (void)
+ 128          {
+ 129   1        return (UBYCTLX);
+ 130   1      }
+ 131          
+ 132          /*F**************************************************************************
+ 133          * NAME: usb_get_nb_byte_epw 
+ 134          *----------------------------------------------------------------------------
+ 135          * PARAMS:
+ 136          * return:   number of byte stored in the endpoint .
+ 137          *----------------------------------------------------------------------------
+ 138          * PURPOSE: 
+ 139          * This function returns the number of byte stored in the endpoint 6.
+ 140          *----------------------------------------------------------------------------
+ 141          * EXAMPLE:
+ 142          *----------------------------------------------------------------------------
+ 143          * NOTE:
+ 144          * This function shall be launched only for OUT endpoints after each receipt
+ 145          * and before any other operation.
+ 146          * This function shall be used if the declared FIFO size is more than
+ 147          * 255 bytes.
+ 148          *----------------------------------------------------------------------------
+ 149          * REQUIREMENTS:
+ 150          *****************************************************************************/
+ 151          Uint16 usb_get_nb_byte_epw (void)
+ 152          {
+ 153   1        return ((((Uint16)UBYCTHX)<<8)|(UBYCTLX)); 
+ 154   1      }
+ 155          
+ 156          /*F**************************************************************************
+ 157          * NAME: usb_send_ep0_packet
+ 158          *----------------------------------------------------------------------------
+ 159          * PARAMS:
+ 160          * *tbuf:        address of the first data to send
+ 161          * data_length:  number of bytes to send
+ 162          * return:       address of the next Ucharto send
+ 163          *----------------------------------------------------------------------------
+ 164          * PURPOSE: 
+ 165          * This function moves the data pointed by tbuf to the default Control
+ 166          * endpoint fifo and sends it through the USB.
+ 167          *----------------------------------------------------------------------------
+ 168          * EXAMPLE:
+ 169          * usb_send_ep0_packet(&first_data,0x20);  // send packet
+ 170          * while(!(Usb_tx_complete));              // wait packet ACK'ed by the Host
+ 171          * Usb_clear_tx_complete();                     // acknowledge the transmit
+ 172          *----------------------------------------------------------------------------
+ 173          * NOTE: 
+ 174          * tbuf is incremented of 'data_length'.
+ 175          *----------------------------------------------------------------------------
+ 176          * REQUIREMENTS: 
+ 177          *****************************************************************************/
+ 178          Uchar* usb_send_ep0_packet (Uchar* tbuf, Uchar data_length)
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 4   
+
+ 179          {
+ 180   1        Usb_select_ep(0);
+ 181   1      
+ 182   1        for (; data_length-- ;  tbuf++)  { Usb_write_byte(*tbuf); }
+ 183   1        Usb_set_tx_ready();
+ 184   1      
+ 185   1        return tbuf;
+ 186   1      }
+ 187          
+ 188          
+ 189          /*F**************************************************************************
+ 190          * NAME: usb_send_right_packet
+ 191          *----------------------------------------------------------------------------
+ 192          * PARAMS:
+ 193          * ep_num:       number of the addressed endpoint
+ 194          * *tbuf:        address of the first data to send
+ 195          * data_length:  number of bytes to send
+ 196          * return:       address of the next Uchar to send
+ 197          *----------------------------------------------------------------------------
+ 198          * PURPOSE: 
+ 199          * This function moves the data pointed by tbuf to the selected endpoint fifo 
+ 200          * and sends it through the USB.
+ 201          *----------------------------------------------------------------------------
+ 202          * EXAMPLE:
+ 203          * usb_send_packet(3,&first_data,0x20);    // send packet on the endpoint #3
+ 204          * while(!(Usb_tx_complete));              // wait packet ACK'ed by the Host
+ 205          * Usb_clear_tx_complete();                     // acknowledge the transmit
+ 206          *----------------------------------------------------------------------------
+ 207          * NOTE:
+ 208          * tbuf is incremented of 'data_length'.
+ 209          *----------------------------------------------------------------------------
+ 210          * REQUIREMENTS: 
+ 211          *****************************************************************************/
+ 212          Uchar* usb_send_right_packet ( Uchar * tbuf, Uchar data_length)
+ 213          {
+ 214   1        for ( ; data_length-- ; tbuf++)  { Usb_write_byte(*tbuf); }
+ 215   1        Usb_set_tx_ready();
+ 216   1      
+ 217   1        return tbuf;
+ 218   1      }
+ 219          
+ 220          
+ 221           
+ 222          
+ 223          /*F**************************************************************************
+ 224          * NAME: usb_read_packet
+ 225          *----------------------------------------------------------------------------
+ 226          * PARAMS:
+ 227          * ep_num:       number of the addressed endpoint
+ 228          * *rbuf:        address of the first data to write with the USB data
+ 229          * data_length:  number of bytes to read
+ 230          * return:       address of the next Ucharto send
+ 231          *----------------------------------------------------------------------------
+ 232          * PURPOSE: 
+ 233          * This function moves the data stored in the selected endpoint fifo to 
+ 234          * the address specified by *rbuf.
+ 235          *----------------------------------------------------------------------------
+ 236          * EXAMPLE:
+ 237          * while(!(Usb_rx_complete));                      // wait new packet received
+ 238          * usb_read_packet(4,&first_data,usb_get_nb_byte); // read packet from ep 4
+ 239          * Usb_clear_rx();                                 // acknowledge the transmit
+ 240          *----------------------------------------------------------------------------
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 5   
+
+ 241          * NOTE:
+ 242          * rbuf is incremented of 'data_length'.
+ 243          *----------------------------------------------------------------------------
+ 244          * REQUIREMENTS: 
+ 245          *****************************************************************************/
+ 246          Uchar* usb_read_right_packet (Uchar* rbuf, Uchar data_length)
+ 247          {
+ 248   1        for (; data_length-- ; rbuf++) { *rbuf = Usb_read_byte(); }
+ 249   1      
+ 250   1        return rbuf;
+ 251   1      }
+ 252          
+ 253          /*F**************************************************************************
+ 254          * NAME: usb_halt_endpoint
+ 255          *----------------------------------------------------------------------------
+ 256          * PARAMS:
+ 257          * ep_num:       number of the addressed endpoint
+ 258          * return:       none
+ 259          *----------------------------------------------------------------------------
+ 260          * PURPOSE: 
+ 261          * This function sends a STALL handshake for the next Host request. A STALL
+ 262          * handshake will be send for each next request untill a SETUP or a Clear Halt
+ 263          * Feature occurs for this endpoint.
+ 264          *----------------------------------------------------------------------------
+ 265          * EXAMPLE:
+ 266          *----------------------------------------------------------------------------
+ 267          * NOTE:
+ 268          *----------------------------------------------------------------------------
+ 269          * REQUIREMENTS: 
+ 270          *****************************************************************************/
+ 271          void usb_halt_endpoint (Uchar ep_num)
+ 272          {
+ 273   1        Usb_select_ep(ep_num);
+ 274   1        UEPSTAX = 0x00;
+ 275   1        Usb_set_stall_request();
+ 276   1      }
+ 277          
+ 278          /*F**************************************************************************
+ 279          * NAME: usb_reset_endpoint
+ 280          *----------------------------------------------------------------------------
+ 281          * PARAMS:
+ 282          * return:       none
+ 283          *----------------------------------------------------------------------------
+ 284          * PURPOSE: 
+ 285          * This function resets the endpoint fifo. This should be performed before
+ 286          * the first use of an endpoint and after a Clear Halt Feature for the 
+ 287          * endpoint
+ 288          *----------------------------------------------------------------------------
+ 289          * EXAMPLE:
+ 290          *----------------------------------------------------------------------------
+ 291          * NOTE: 
+ 292          *----------------------------------------------------------------------------
+ 293          * REQUIREMENTS: 
+ 294          *****************************************************************************/
+ 295          void usb_reset_endpoint (Uchar ep_num)
+ 296          {
+ 297   1        UEPRST = 0x01 << ep_num ;
+ 298   1        UEPRST = 0x00;
+ 299   1      }
+ 300          
+ 301          /*F**************************************************************************
+ 302          * NAME: configure_usb_clock
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 6   
+
+ 303          *----------------------------------------------------------------------------
+ 304          * PARAMS:
+ 305          * return:       none
+ 306          * The possible value for FOSC are :
+ 307          *              3000   ( 3MHz)
+ 308          *              6000   ( 6MHz)
+ 309          *              8000   ( 8MHz)
+ 310          *             12000   (12MHz)
+ 311          *             16000   (16MHz)
+ 312          *             18000   (18MHz)
+ 313          *             20000   (20MHz)
+ 314          *             24000   (24MHz)
+ 315          *             32000   (32MHz)
+ 316          *             40000   (40MHz)
+ 317          *             48000   (48MHz)
+ 318          *              0000   (frequency auto-dectection)
+ 319          *----------------------------------------------------------------------------
+ 320          * PURPOSE: 
+ 321          * This function configure the PLL to generate the 48MHz clock required by
+ 322          * the USB controller, considering the FOSC defined in the "config.h" file.
+ 323          *----------------------------------------------------------------------------
+ 324          * EXAMPLE:
+ 325          * #define FOSC   8000 // 8MHz
+ 326          * configure_usb_clock();
+ 327          *----------------------------------------------------------------------------
+ 328          * NOTE: 
+ 329          *----------------------------------------------------------------------------
+ 330          * REQUIREMENTS: 
+ 331          *****************************************************************************/
+ 332          void configure_usb_clock(void)
+ 333          {
+ 334   1      #ifndef PLL_USB_OK
+ 335   1      #if FOSC == 3000
+                Pll_set_div(PLL_3MHz);
+                Pll_enable();
+              #endif
+ 339   1      
+ 340   1      #if FOSC == 4000
+                Pll_set_div(PLL_4MHz);
+                Pll_enable();
+              #endif
+ 344   1      
+ 345   1      #if FOSC == 6000
+                Pll_set_div(PLL_6MHz);
+                Pll_enable();
+              #endif
+ 349   1      
+ 350   1      #if FOSC == 8000
+                Pll_set_div(PLL_8MHz);
+                Pll_enable();
+              #endif
+ 354   1      
+ 355   1      #if FOSC == 12000
+                Pll_set_div(PLL_12MHz);
+                Pll_enable();
+              #endif
+ 359   1      
+ 360   1      #if FOSC == 16000
+                Pll_set_div(PLL_16MHz);
+                Pll_enable();
+              #endif
+ 364   1      
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 7   
+
+ 365   1      #if FOSC == 18000
+                Pll_set_div(PLL_18MHz);
+                Pll_enable();
+              #endif
+ 369   1      
+ 370   1      #if FOSC == 20000
+                Pll_set_div(PLL_20MHz);
+                Pll_enable();
+              #endif
+ 374   1      
+ 375   1      #if FOSC == 24000
+ 376   1        Pll_set_div(PLL_24MHz);
+ 377   1        Pll_enable();
+ 378   1      #endif
+ 379   1      
+ 380   1      #if FOSC == 32000
+                Pll_set_div(PLL_32MHz);
+                Pll_enable();
+              #endif
+ 384   1      
+ 385   1      #if FOSC == 40000
+                Pll_set_div(PLL_40MHz);
+                Pll_enable();
+              #endif
+ 389   1      
+ 390   1      #if FOSC == 48000
+                Usb_set_EXT48();
+              #endif
+ 393   1      
+ 394   1      #if FOSC == 0000            /* frequency Auto-detection */
+              
+              Uchar i;
+              Uchar reload;
+                
+                PLLCON = 0x00;
+                
+                if (CKCON0 & MSK_X2)
+                {
+                  CKCON0 |= MSK_T0X2;
+                  reload = 6; 
+                }
+                else
+                {
+                  CKCON0 &= ~MSK_T0X2;
+                  reload = 9;
+                }
+                
+                TMOD = 0x01;                            /* put Timer 0 in mode 1 */
+                USBINT = 0x00;
+                i=reload;
+                
+                while (!(USBINT & MSK_SOFINT))          /* Do until Start Of Frame detection */
+                {
+                  if (i==9)
+                  {
+                    Pll_stop();                         /* external 48 MHz supposed */
+                    Usb_set_EXT48();
+                  }
+                  else
+                  {
+                    Usb_clear_EXT48();                  /* PLL output supposed */
+                    Pll_set_div(pll_value[i]);          /* configure PLL */
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 8   
+
+                    Pll_enable();
+                  }
+                  TH0 = TH0_value[i];                   /* Run Timer 0 */
+                  TL0 = TL0_value[i];
+                  TCON |= 0x10;
+                  while(((TCON & 0x20) != 0x20));       /* Wait Timer 0 Overflow */
+                  TCON &= ~(0x30);
+                  if (i==0)
+                  {
+                    i=reload;
+                  }
+                  else
+                  {
+                    i--;
+                  }
+                }
+              
+                TH0  = 0;                               /* Reset Timer 0 Registers */
+                TL0  = 0;
+                TCON = 0;
+                TMOD = 0;
+              #endif
+ 449   1      #endif
+ 450   1      }
+ 451          
+ 452          
+ 453          
+ 454          /*F**************************************************************************
+ 455          * NAME: usb_init 
+ 456          *----------------------------------------------------------------------------
+ 457          * PARAMS:
+ 458          * return:   none
+ 459          *----------------------------------------------------------------------------
+ 460          * PURPOSE: 
+ 461          * This function initializes the USB controller (low-level)
+ 462          *----------------------------------------------------------------------------
+ 463          * EXAMPLE:
+ 464          *----------------------------------------------------------------------------
+ 465          * NOTE: 
+ 466          *----------------------------------------------------------------------------
+ 467          * REQUIREMENTS: 
+ 468          *****************************************************************************/
+ 469          void usb_init (void)
+ 470          {
+ 471   1      #ifdef USB_FORCE_DETACH
+              register Byte   i,j;
+              #endif
+ 474   1      configure_usb_clock();  // The PLL is already configured by the main task
+ 475   1      Usb_enable();
+ 476   1      #ifdef USB_FORCE_DETACH
+              Usb_detach();           // detach from USB interface if active connection set
+              for (i=0;--i;) for (j=(FOSC>>8);--j;); // Chap. 7 USB: wait 2.5us
+              #endif
+ 480   1      }
+ 481          
+ 482          
+ 483          
+ 484          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    179    ----
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 9   
+
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

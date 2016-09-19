@@ -1,0 +1,244 @@
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE UART_USB_LIB
+OBJECT MODULE PLACED IN uart_usb_lib.obj
+COMPILER INVOKED BY: C:\Keil123\C51\BIN\C51.exe lib_mcu\usb\uart_usb_lib.c LARGE OPTIMIZE(9,SPEED) BROWSE INCDIR(.\;.\;.
+                    -\) DEFINE(KEIL) DEBUG OBJECTEXTEND PRINT(.\uart_usb_lib.lst) TABS(2) OBJECT(uart_usb_lib.obj)
+
+line level    source
+
+   1          /*C**************************************************************************
+   2          * NAME:         uart_usb_lib.c
+   3          *----------------------------------------------------------------------------
+   4          * Copyright (c) 2004 Atmel.
+   5          *----------------------------------------------------------------------------
+   6          * RELEASE:      c5131-usb-cdc-1_2_1      
+   7          * REVISION:     1.7     
+   8          *----------------------------------------------------------------------------
+   9          * PURPOSE: 
+  10          * This file controls the UART USB functions.
+  11          *****************************************************************************/
+  12          /*_____ I N C L U D E S ____________________________________________________*/
+  13          
+  14          #include "config.h"
+  15          #include "usb_drv.h"
+  16          #include "modules\usb_cdc_enum\usb_cdc_enum.h"
+  17          #include "uart_usb_lib.h"
+  18          
+  19          /*_____ M A C R O S ________________________________________________________*/
+  20          
+  21          /*_____ D E F I N I T I O N ________________________________________________*/
+  22          
+  23          Uchar tx_counter;
+  24          Uchar rx_counter;
+  25          
+  26          extern         Uchar  usb_configuration_nb;
+  27          
+  28          /*_____ D E C L A R A T I O N ______________________________________________*/
+  29          
+  30          /*F**************************************************************************
+  31          * NAME: uart_usb_init
+  32          *----------------------------------------------------------------------------
+  33          * PARAMS:
+  34          * delay:    none
+  35          * return:   none
+  36          *----------------------------------------------------------------------------
+  37          * PURPOSE: 
+  38          * This function initializes the UART USB library.
+  39          *----------------------------------------------------------------------------
+  40          * EXAMPLE:
+  41          *----------------------------------------------------------------------------
+  42          * NOTE: 
+  43          *----------------------------------------------------------------------------
+  44          * REQUIREMENTS: 
+  45          *****************************************************************************/
+  46          
+  47          void uart_usb_init(void)
+  48          {
+  49   1        tx_counter = 0;
+  50   1        rx_counter = 0;
+  51   1      }
+  52          
+  53          /*F**************************************************************************
+  54          * NAME: uart_usb_test_hit
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 2   
+
+  55          *----------------------------------------------------------------------------
+  56          * PARAMS:
+  57          * delay:    none
+  58          * return:   boolean TRUE if a byte is ready to be read, FALSE otherwise
+  59          *----------------------------------------------------------------------------
+  60          * PURPOSE: 
+  61          * This function checks if a character has been received on the USB bus.
+  62          *----------------------------------------------------------------------------
+  63          * EXAMPLE:
+  64          *----------------------------------------------------------------------------
+  65          * NOTE: 
+  66          *----------------------------------------------------------------------------
+  67          * REQUIREMENTS: 
+  68          *****************************************************************************/
+  69          bit uart_usb_test_hit(void)
+  70          {
+  71   1        if (!rx_counter)
+  72   1        { 
+  73   2          Usb_select_ep(RX_EP);
+  74   2          if (Usb_rx_complete()) { rx_counter = usb_get_nb_byte(); if (!rx_counter) Usb_clear_rx_cdc(); }
+  75   2        }
+  76   1        return (rx_counter!=0);
+  77   1      }
+  78          
+  79          /*F**************************************************************************
+  80          * NAME: uart_usb_getchar
+  81          *----------------------------------------------------------------------------
+  82          * PARAMS:
+  83          * delay:    none
+  84          * return:   Uchar, read data from USB
+  85          *----------------------------------------------------------------------------
+  86          * PURPOSE: 
+  87          * This function reads one byte from the USB bus
+  88          *----------------------------------------------------------------------------
+  89          * EXAMPLE:
+  90          *----------------------------------------------------------------------------
+  91          * NOTE:
+  92          * If one byte is present in the USB fifo, this byte is returned. If no data
+  93          * is present in the USB fifo, this function waits for USB data.
+  94          *----------------------------------------------------------------------------
+  95          * REQUIREMENTS: 
+  96          *****************************************************************************/
+  97          char uart_usb_getchar(void)
+  98          {
+  99   1        register Uchar data_rx;
+ 100   1      
+ 101   1        Usb_select_ep(RX_EP);
+ 102   1        if (!rx_counter) while (!uart_usb_test_hit());
+ 103   1        data_rx=Usb_read_byte();
+ 104   1        rx_counter--;
+ 105   1        if (!rx_counter) Usb_clear_rx_cdc();
+ 106   1        return data_rx;
+ 107   1      }
+ 108          
+ 109          
+ 110          /*F**************************************************************************
+ 111          * NAME: uart_usb_tx_ready
+ 112          *----------------------------------------------------------------------------
+ 113          * PARAMS:
+ 114          * delay:    none
+ 115          * return:   Boolean. TRUE if the firmware can write a new byte to transmit.
+ 116          * FALSE oterwise.
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 3   
+
+ 117          *----------------------------------------------------------------------------
+ 118          * PURPOSE: 
+ 119          * This function checks if the USB emission buffer is ready to accept at
+ 120          * at least 1 byte
+ 121          *----------------------------------------------------------------------------
+ 122          * EXAMPLE:
+ 123          *----------------------------------------------------------------------------
+ 124          * NOTE: 
+ 125          *----------------------------------------------------------------------------
+ 126          * REQUIREMENTS: 
+ 127          *****************************************************************************/
+ 128          bit uart_usb_tx_ready(void)
+ 129          {
+ 130   1        Usb_select_ep(TX_EP);
+ 131   1        if (Usb_tx_ready())    { return FALSE; }
+ 132   1        if (Usb_tx_complete()) { Usb_clear_tx_complete(); return TRUE; }
+ 133   1        return TRUE;
+ 134   1      }
+ 135          
+ 136          /*F**************************************************************************
+ 137          * NAME: uart_usb_putchar
+ 138          *----------------------------------------------------------------------------
+ 139          * PARAMS:
+ 140          * Uchar:    data to send through USB
+ 141          * delay:    none
+ 142          * return:   data to send
+ 143          *----------------------------------------------------------------------------
+ 144          * PURPOSE: 
+ 145          * This function fills the USB transmit buffer with the new data. This buffer
+ 146          * is sent if complete. To flush this buffer before waiting full, launch
+ 147          * the uart_usb_flush() function.
+ 148          *----------------------------------------------------------------------------
+ 149          * EXAMPLE:
+ 150          *----------------------------------------------------------------------------
+ 151          * NOTE: 
+ 152          *----------------------------------------------------------------------------
+ 153          * REQUIREMENTS: 
+ 154          *****************************************************************************/
+ 155          char uart_usb_putchar(Uchar data_to_send)
+ 156          { 
+ 157   1        Usb_select_ep(TX_EP);
+ 158   1        if ((Usb_tx_ready())||(Usb_tx_complete())) 
+ 159   1        {
+ 160   2            while(!Usb_tx_complete())
+ 161   2            {
+ 162   3                Usb_select_ep(EP_CONTROL);
+ 163   3                if (Usb_setup_received()) { usb_enumeration_process(); }
+ 164   3              
+ 165   3                Usb_select_ep(3);
+ 166   3                if (Usb_tx_complete())    { Usb_clear_tx_complete();   }
+ 167   3            
+ 168   3                 Usb_select_ep(TX_EP);
+ 169   3            }
+ 170   2            Usb_select_ep(TX_EP);
+ 171   2            Usb_clear_tx_complete();
+ 172   2            tx_counter = 0;
+ 173   2        }
+ 174   1        Usb_write_byte(data_to_send);
+ 175   1        tx_counter++;
+ 176   1        if(tx_counter >= TX_EP_SIZE-1) 
+ 177   1        {
+ 178   2        uart_usb_flush();
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 4   
+
+ 179   2        } 
+ 180   1        return data_to_send;
+ 181   1      }
+ 182          
+ 183          
+ 184          /*F**************************************************************************
+ 185          * NAME: uart_usb_flush
+ 186          *----------------------------------------------------------------------------
+ 187          * PARAMS:
+ 188          * delay:    none
+ 189          * return:   none
+ 190          *----------------------------------------------------------------------------
+ 191          * PURPOSE: 
+ 192          * This function sends the data stored in the USB transmit buffer.
+ 193          * This function does nothing if there is no data in the buffer.
+ 194          *----------------------------------------------------------------------------
+ 195          * EXAMPLE:
+ 196          *----------------------------------------------------------------------------
+ 197          * NOTE: 
+ 198          *----------------------------------------------------------------------------
+ 199          * REQUIREMENTS: 
+ 200          *****************************************************************************/
+ 201          void uart_usb_flush (void)
+ 202          {
+ 203   1        if (usb_configuration_nb != 0)
+ 204   1        {
+ 205   2            if (tx_counter)
+ 206   2            {
+ 207   3               Usb_select_ep(TX_EP);
+ 208   3               Usb_set_tx_ready();
+ 209   3               tx_counter = 0;
+ 210   3            }
+ 211   2        }
+ 212   1      }
+ 213          
+ 214          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    209    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      2       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

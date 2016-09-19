@@ -1,0 +1,958 @@
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE USB_CDC_ENUM
+OBJECT MODULE PLACED IN usb_cdc_enum.obj
+COMPILER INVOKED BY: C:\Keil123\C51\BIN\C51.exe modules\usb_cdc_enum\usb_cdc_enum.c LARGE OPTIMIZE(9,SPEED) BROWSE INCDI
+                    -R(.\;.\;.\) DEFINE(KEIL) DEBUG OBJECTEXTEND PRINT(.\usb_cdc_enum.lst) TABS(2) OBJECT(usb_cdc_enum.obj)
+
+line level    source
+
+   1          /*C**************************************************************************
+   2          * NAME:         usb_cdc_enum.c
+   3          *----------------------------------------------------------------------------
+   4          * Copyright (c) 2004 Atmel.
+   5          *----------------------------------------------------------------------------
+   6          * RELEASE:      c5131-usb-cdc-1_2_1      
+   7          * REVISION:     1.5     
+   8          *----------------------------------------------------------------------------
+   9          * PURPOSE: 
+  10          * This file contains the USB Endpoint 0 management routines corresponding
+  11          * to a USB HID keyboard implementation.
+  12          *****************************************************************************/
+  13          
+  14          /*_____ I N C L U D E S ____________________________________________________*/
+  15          
+  16          #include "config.h"
+  17          #include "lib_mcu\usb\usb_drv.h"
+  18          #include "usb_cdc_enum.h"
+  19          #ifndef HELLO_WORLD_DEMO
+              #include "lib_mcu\uart\uart_lib.h" 
+              #endif
+  22          /*_____ M A C R O S ________________________________________________________*/
+  23          
+  24          
+  25          /*_____ D E F I N I T I O N ________________________________________________*/
+  26          
+  27          code struct usb_st_device_descriptor usb_device_descriptor =
+  28          { 
+  29            sizeof(usb_device_descriptor), DEVICE, USB_SPECIFICATION, DEVICE_CLASS,
+  30            DEVICE_SUB_CLASS, DEVICE_PROTOCOL, EP_CONTROL_LENGTH, VENDOR_ID, PRODUCT_ID,
+  31            RELEASE_NUMBER, MAN_INDEX, PROD_INDEX, SN_INDEX, NB_CONFIGURATION
+  32          };
+  33          
+  34          code struct usb_st_manufacturer usb_manufacturer =
+  35          { sizeof(usb_manufacturer),  STRING, USB_MANUFACTURER_NAME };
+  36          
+  37          code struct usb_st_product usb_product =
+  38          { sizeof(usb_product),       STRING, USB_PRODUCT_NAME };
+  39          
+  40          code struct usb_st_serial_number usb_serial_number =
+  41          { sizeof(usb_serial_number), STRING, USB_SERIAL_NUMBER };
+  42          
+  43          code struct usb_st_language_descriptor usb_language =
+  44          { sizeof(usb_language),      STRING, LANGUAGE_ID };
+  45          
+  46          code struct  
+  47          { struct usb_st_configuration_descriptor  cfg;
+  48            struct usb_st_interface_descriptor      ifc0;
+  49            Uchar                                   CS_INTERFACE0[19];
+  50            struct usb_st_endpoint_descriptor       ep3 ;
+  51            struct usb_st_interface_descriptor      ifc1;
+  52            struct usb_st_endpoint_descriptor       ep1 ;
+  53            struct usb_st_endpoint_descriptor       ep2 ;
+  54           }
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 2   
+
+  55            usb_configuration =
+  56            {
+  57              { 9, CONFIGURATION, CONF_LENGTH, NB_INTERFACE, CONF_NB,
+  58                CONF_INDEX, CONF_ATTRIBUTES, MAX_POWER},
+  59              { 9, INTERFACE, INTERFACE0_NB, ALTERNATE0, NB_ENDPOINT0, INTERFACE0_CLASS,
+  60                INTERFACE0_SUB_CLASS, INTERFACE0_PROTOCOL, INTERFACE0_INDEX },
+  61              { 0x05, 0x24, 0x00, 0x10, 0x01, 0x05, 0x24, 0x01, 0x03, 0x01, 0x04, 0x24, 0x02, 0x06,0x05, 0x24, 0x06,
+             - 0x00, 0x01 },
+  62              { 7, ENDPOINT, ENDPOINT_NB_3, EP_ATTRIBUTES_3, EP_SIZE_3, EP_INTERVAL_3 },
+  63              { 9, INTERFACE, INTERFACE1_NB, ALTERNATE1, NB_ENDPOINT1, INTERFACE1_CLASS,
+  64                INTERFACE1_SUB_CLASS, INTERFACE1_PROTOCOL, INTERFACE1_INDEX },
+  65              { 7, ENDPOINT, ENDPOINT_NB_1, EP_ATTRIBUTES_1, EP_SIZE_1, EP_INTERVAL_1 },
+  66              { 7, ENDPOINT, ENDPOINT_NB_2, EP_ATTRIBUTES_2, EP_SIZE_2, EP_INTERVAL_2 },
+  67          
+  68          };
+  69          
+  70          static  bit     zlp;
+  71          static  Uchar   xdata endpoint_status[7];
+  72          static  Uchar   xdata hid_idle_duration;
+  73          static  Uchar   *pbuffer;
+  74          static  Uchar   xdata bmRequestType;
+  75          
+  76                  Uchar   xdata line_coding[7];
+  77                  DWord   xdata bdr;
+  78          
+  79                  Uchar   usb_configuration_nb;
+  80          extern  bit     usb_connected;
+  81                  bit     uart_hardware_flow_control;
+  82          
+  83          /*_____ D E C L A R A T I O N ______________________________________________*/
+  84          
+  85          static  void    usb_get_descriptor (void);
+  86          static  void    usb_read_request (void);
+  87          static  void    usb_set_address (void);
+  88          static  void    usb_set_configuration (void);
+  89          static  void    usb_clear_feature (void);
+  90          static  void    usb_set_feature (void);
+  91          static  void    usb_get_status (void);
+  92          static  void    usb_get_configuration (void);
+  93          static  void    usb_get_interface (void);
+  94          
+  95          
+  96          /*F**************************************************************************
+  97          * NAME: usb_var_init
+  98          *----------------------------------------------------------------------------
+  99          * PARAMS:
+ 100          *
+ 101          * return:
+ 102          *----------------------------------------------------------------------------
+ 103          * PURPOSE: 
+ 104          * This function initializes the USB controller and resets the endpoints FIFOs.
+ 105          *----------------------------------------------------------------------------
+ 106          * EXAMPLE:
+ 107          *----------------------------------------------------------------------------
+ 108          * NOTE: 
+ 109          *----------------------------------------------------------------------------
+ 110          * REQUIREMENTS: 
+ 111          *****************************************************************************/
+ 112          void usb_var_init (void)
+ 113          {
+ 114   1        endpoint_status[1] = 0x00;
+ 115   1        endpoint_status[2] = 0x00;
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 3   
+
+ 116   1        endpoint_status[3] = 0x00;
+ 117   1        usb_configuration_nb = 0x00;
+ 118   1        line_coding[0] = 0x00; // data terminal rate in bit per second - 4bytes
+ 119   1        line_coding[1] = 0xE1;
+ 120   1        line_coding[2] = 0x00;
+ 121   1        line_coding[3] = 0x00;
+ 122   1        line_coding[4] = 0; // stop bit
+ 123   1        line_coding[5] = 1; // parity
+ 124   1        line_coding[6] = 8; // data bits
+ 125   1        uart_hardware_flow_control = FALSE;
+ 126   1      
+ 127   1      }
+ 128          
+ 129          
+ 130          /*F**************************************************************************
+ 131          * NAME: usb_ep_init
+ 132          *----------------------------------------------------------------------------
+ 133          * PARAMS:
+ 134          *
+ 135          * return:
+ 136          *----------------------------------------------------------------------------
+ 137          * PURPOSE: 
+ 138          * This function configures the endpoints.
+ 139          *----------------------------------------------------------------------------
+ 140          * EXAMPLE:
+ 141          *----------------------------------------------------------------------------
+ 142          * NOTE: 
+ 143          *----------------------------------------------------------------------------
+ 144          * REQUIREMENTS: 
+ 145          *****************************************************************************/
+ 146          void usb_ep_init (void)
+ 147          {
+ 148   1        usb_configure_endpoint(EP_CDC_IN , BULK_IN);
+ 149   1        usb_reset_endpoint(EP_CDC_IN);
+ 150   1        usb_configure_endpoint(EP_CDC_OUT , BULK_OUT);
+ 151   1        usb_reset_endpoint(EP_CDC_OUT);
+ 152   1        usb_configure_endpoint(3 , INTERRUPT_IN);
+ 153   1        usb_reset_endpoint(3);
+ 154   1      
+ 155   1      }
+ 156          
+ 157          
+ 158          
+ 159          /*F**************************************************************************
+ 160          * NAME: usb_enumeration_process
+ 161          *----------------------------------------------------------------------------
+ 162          * PARAMS:
+ 163          *
+ 164          * return:
+ 165          *----------------------------------------------------------------------------
+ 166          * PURPOSE: 
+ 167          * This function manages the enumeration process
+ 168          *----------------------------------------------------------------------------
+ 169          * EXAMPLE:
+ 170          *----------------------------------------------------------------------------
+ 171          * NOTE: 
+ 172          *----------------------------------------------------------------------------
+ 173          * REQUIREMENTS: 
+ 174          *****************************************************************************/
+ 175          void usb_enumeration_process (void)
+ 176          { 
+ 177   1        Usb_select_ep(EP_CONTROL);
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 4   
+
+ 178   1        usb_read_request();
+ 179   1      }
+ 180          
+ 181          
+ 182          /*F**************************************************************************
+ 183          * NAME: usb_read_request
+ 184          *----------------------------------------------------------------------------
+ 185          * PARAMS:
+ 186          *
+ 187          * return:
+ 188          *----------------------------------------------------------------------------
+ 189          * PURPOSE: 
+ 190          * This function reads the SETUP request sent to the default control endpoint
+ 191          * and  the appropriate function. When exiting of the usb_read_request
+ 192          * function, the device is ready to manage the next request.
+ 193          *----------------------------------------------------------------------------
+ 194          * EXAMPLE:
+ 195          *----------------------------------------------------------------------------
+ 196          * NOTE: list of supported requests:
+ 197          *               GET_DESCRIPTOR
+ 198          *               GET_CONFIGURATION
+ 199          *               SET_ADDRESS
+ 200          *               SET_CONFIGURATION or SET_REPORT
+ 201          *               CLEAR_FEATURE
+ 202          *               SET_FEATURE
+ 203          *               GET_STATUS
+ 204          *               GET_MAX_LUN
+ 205          *               MASS_STORAGE_RESET
+ 206          *----------------------------------------------------------------------------
+ 207          * REQUIREMENTS: 
+ 208          *****************************************************************************/
+ 209          void usb_read_request (void)
+ 210          { 
+ 211   1        bmRequestType = Usb_read_byte();          /* read bmRequestType */
+ 212   1      
+ 213   1        switch (Usb_read_byte())                  /* test the bRequest value */
+ 214   1        {
+ 215   2          case GET_DESCRIPTOR:
+ 216   2            usb_get_descriptor();            break;
+ 217   2          case GET_CONFIGURATION:
+ 218   2            usb_get_configuration();         break;
+ 219   2          case SET_ADDRESS:
+ 220   2            usb_set_address();               break;
+ 221   2          case SET_CONFIGURATION:
+ 222   2            usb_set_configuration();         break;
+ 223   2          case CLEAR_FEATURE: // or GET_ENCPASULATED_COMMAND //
+ 224   2            if(bmRequestType == 0xA1) { cdc_get_encapsulated_command(); } 
+ 225   2            else {usb_clear_feature();}         break;
+ 226   2          case SET_FEATURE:
+ 227   2            usb_set_feature();               break;
+ 228   2          case GET_STATUS:    // or SEND_ENCAPSULATED_COMMAND //
+ 229   2            if(bmRequestType == 0x21) { cdc_send_encapsulated_command(); } 
+ 230   2            else {usb_get_status();}         break;
+ 231   2          case GET_INTERFACE:
+ 232   2            usb_get_interface();             break;
+ 233   2                                             /* CDC Specific requests */
+ 234   2          case SET_LINE_CODING:
+ 235   2            cdc_set_line_coding();           break;
+ 236   2          case GET_LINE_CODING:
+ 237   2            cdc_get_line_coding();           break;
+ 238   2          case SET_CONTROL_LINE_STATE:
+ 239   2            cdc_set_control_line_state();    break;
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 5   
+
+ 240   2          case SEND_BREAK:
+ 241   2            cdc_send_break();                break;
+ 242   2      
+ 243   2          case SET_DESCRIPTOR:
+ 244   2          case SET_INTERFACE:
+ 245   2          case SYNCH_FRAME:
+ 246   2          default:
+ 247   2            Usb_clear_rx_setup();
+ 248   2            Usb_set_stall_request();
+ 249   2            while (!Usb_stall_sent());
+ 250   2            Usb_clear_stall_request();
+ 251   2            Usb_clear_stalled();
+ 252   2            break;
+ 253   2          }
+ 254   1          Usb_clear_DIR();
+ 255   1      }
+ 256          
+ 257          
+ 258          /*F**************************************************************************
+ 259          * NAME: usb_set_address
+ 260          *----------------------------------------------------------------------------
+ 261          * PARAMS:
+ 262          *
+ 263          * return:
+ 264          *----------------------------------------------------------------------------
+ 265          * PURPOSE: 
+ 266          * This function manages the SET_ADDRESS request. The new address is stored
+ 267          * in the USBADDR register
+ 268          *----------------------------------------------------------------------------
+ 269          * EXAMPLE:
+ 270          *----------------------------------------------------------------------------
+ 271          * NOTE:
+ 272          *----------------------------------------------------------------------------
+ 273          * REQUIREMENTS: 
+ 274          *****************************************************************************/
+ 275          void usb_set_address (void)
+ 276          {
+ 277   1      Uchar add;
+ 278   1      
+ 279   1        add = Usb_read_byte();                    /* store the LSB of wValue = address */
+ 280   1        Usb_clear_rx_setup();
+ 281   1        Usb_set_tx_ready();                          /* send a ZLP for STATUS phase */
+ 282   1        Usb_set_FADDEN();
+ 283   1        while (!(Usb_tx_complete()));
+ 284   1        Usb_clear_tx_complete();
+ 285   1        Usb_configure_address(add);
+ 286   1      }
+ 287          
+ 288          
+ 289          /*F**************************************************************************
+ 290          * NAME: usb_set_configuration
+ 291          *----------------------------------------------------------------------------
+ 292          * PARAMS:
+ 293          *
+ 294          * return:
+ 295          *----------------------------------------------------------------------------
+ 296          * PURPOSE: 
+ 297          * This function manages the SET_CONFIGURATION request.
+ 298          *----------------------------------------------------------------------------
+ 299          * EXAMPLE:
+ 300          *----------------------------------------------------------------------------
+ 301          * NOTE:
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 6   
+
+ 302          *----------------------------------------------------------------------------
+ 303          * REQUIREMENTS: 
+ 304          *****************************************************************************/
+ 305          void usb_set_configuration (void)
+ 306          {
+ 307   1       Uchar configuration_number;
+ 308   1        configuration_number = Usb_read_byte();   /* read the conf. num. in wValue */
+ 309   1        Usb_clear_DIR();
+ 310   1        Usb_clear_rx_setup();
+ 311   1      
+ 312   1        if (configuration_number <= CONF_NB)
+ 313   1        {
+ 314   2          usb_configuration_nb = configuration_number;
+ 315   2        }
+ 316   1        else
+ 317   1        {
+ 318   2          Usb_set_stall_request();
+ 319   2          while (!Usb_stall_sent());
+ 320   2          Usb_clear_stall_request();
+ 321   2          Usb_clear_stalled();
+ 322   2          return;
+ 323   2        }
+ 324   1      
+ 325   1        Usb_set_tx_ready();                          /* send a ZLP for STATUS phase */
+ 326   1        while (!Usb_tx_complete());
+ 327   1        Usb_clear_tx_complete();
+ 328   1        usb_ep_init();                            /* endpoints configuration */
+ 329   1      }
+ 330          
+ 331          
+ 332          /*F**************************************************************************
+ 333          * NAME: usb_get_descriptor
+ 334          *----------------------------------------------------------------------------
+ 335          * PARAMS:
+ 336          *
+ 337          * return:
+ 338          *----------------------------------------------------------------------------
+ 339          * PURPOSE: 
+ 340          * This function manages the GET_DESCRIPTOR request.
+ 341          *----------------------------------------------------------------------------
+ 342          * EXAMPLE:
+ 343          *----------------------------------------------------------------------------
+ 344          * NOTE:
+ 345          *----------------------------------------------------------------------------
+ 346          * REQUIREMENTS: 
+ 347          *****************************************************************************/
+ 348          void usb_get_descriptor (void)
+ 349          {
+ 350   1      Uchar   data_to_transfer;
+ 351   1      Uint16  wLength;
+ 352   1      Uchar   descriptor_type;
+ 353   1      Uchar   string_type;
+ 354   1      
+ 355   1        zlp = FALSE;                              /* no zero length packet */
+ 356   1        string_type = Usb_read_byte();            /* read LSB of wValue */
+ 357   1        descriptor_type = Usb_read_byte();        /* read MSB of wValue */
+ 358   1        switch (descriptor_type)
+ 359   1        {
+ 360   2          case DEVICE:
+ 361   2          {
+ 362   3            data_to_transfer = sizeof (usb_device_descriptor);
+ 363   3            pbuffer = &(usb_device_descriptor.bLength);
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 7   
+
+ 364   3            break;
+ 365   3          }
+ 366   2      
+ 367   2          case CONFIGURATION:
+ 368   2          {
+ 369   3            data_to_transfer = sizeof (usb_configuration);
+ 370   3            pbuffer = &(usb_configuration.cfg.bLength);
+ 371   3            break;
+ 372   3          }
+ 373   2      
+ 374   2      
+ 375   2          default:
+ 376   2          {
+ 377   3            Usb_clear_rx_setup();
+ 378   3            Usb_set_stall_request();
+ 379   3            while ((!(Usb_stall_sent())) && (Usb_setup_received()));
+ 380   3            Usb_clear_stalled();
+ 381   3            Usb_clear_stall_request();
+ 382   3            Usb_clear_DIR();
+ 383   3            return;
+ 384   3          }
+ 385   2        }
+ 386   1      
+ 387   1        ACC = Usb_read_byte();                    /* don't care of wIndex field */
+ 388   1        ACC = Usb_read_byte();
+ 389   1        ((Uchar*)&wLength)[1] = Usb_read_byte();   /* read wLength */
+ 390   1        ((Uchar*)&wLength)[0] = Usb_read_byte();
+ 391   1        if (wLength > data_to_transfer)
+ 392   1        {
+ 393   2          if ((data_to_transfer % EP_CONTROL_LENGTH) == 0) { zlp = TRUE; }
+ 394   2          else { zlp = FALSE; }                        /* no need of zero length packet */
+ 395   2        }
+ 396   1        else
+ 397   1        {
+ 398   2          data_to_transfer = (Uchar)wLength;       /* send only requested number of data */
+ 399   2        }
+ 400   1        Usb_clear_rx_setup() ;                     /* clear the receive setup flag */
+ 401   1        Usb_set_DIR();                            /* set out on EP0 */
+ 402   1      
+ 403   1        while (data_to_transfer > EP_CONTROL_LENGTH)
+ 404   1        {
+ 405   2          pbuffer = usb_send_ep0_packet(pbuffer, EP_CONTROL_LENGTH);
+ 406   2          data_to_transfer -= EP_CONTROL_LENGTH;
+ 407   2      
+ 408   2          while ((!(Usb_rx_complete())) && (!(Usb_tx_complete())));
+ 409   2          Usb_clear_tx_complete();
+ 410   2          if ((Usb_rx_complete()))                /* if cancel from USB Host */
+ 411   2          {
+ 412   3            Usb_clear_tx_ready();
+ 413   3            Usb_clear_rx();
+ 414   3            return;
+ 415   3          }
+ 416   2        }
+ 417   1        /* send last data packet */
+ 418   1        pbuffer = usb_send_ep0_packet(pbuffer, data_to_transfer);
+ 419   1        data_to_transfer = 0;
+ 420   1        while ((!(Usb_rx_complete())) && (!(Usb_tx_complete())));
+ 421   1        Usb_clear_tx_complete();
+ 422   1        if ((Usb_rx_complete()))                  /* if cancel from USB Host */
+ 423   1        {
+ 424   2          Usb_clear_tx_ready();
+ 425   2          Usb_clear_rx();
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 8   
+
+ 426   2          return;
+ 427   2        }
+ 428   1      
+ 429   1        if (zlp == TRUE)
+ 430   1        {
+ 431   2          usb_send_ep0_packet(pbuffer, 0);
+ 432   2          while ((!(Usb_rx_complete())) && (!(Usb_tx_complete())));
+ 433   2          Usb_clear_tx_complete();
+ 434   2          if ((Usb_rx_complete()))              /* if cancel from USB Host */
+ 435   2          {
+ 436   3            Usb_clear_tx_ready();
+ 437   3            Usb_clear_rx();
+ 438   3            return;
+ 439   3          }
+ 440   2      
+ 441   2        }
+ 442   1        while ((!(Usb_rx_complete())) && (!(Usb_setup_received())));
+ 443   1        if (Usb_setup_received())
+ 444   1        {
+ 445   2          return;
+ 446   2        }
+ 447   1      
+ 448   1        if (Usb_rx_complete())
+ 449   1        {
+ 450   2          Usb_clear_DIR();                        /* set in on EP0 */
+ 451   2          Usb_clear_rx();
+ 452   2        }
+ 453   1      }
+ 454          
+ 455          
+ 456          /*F**************************************************************************
+ 457          * NAME: usb_get_configuration
+ 458          *----------------------------------------------------------------------------
+ 459          * PARAMS:
+ 460          *
+ 461          * return:
+ 462          *----------------------------------------------------------------------------
+ 463          * PURPOSE: 
+ 464          * This function manages the GET_CONFIGURATION request.
+ 465          *----------------------------------------------------------------------------
+ 466          * EXAMPLE:
+ 467          *----------------------------------------------------------------------------
+ 468          * NOTE:
+ 469          *----------------------------------------------------------------------------
+ 470          * REQUIREMENTS: 
+ 471          *****************************************************************************/
+ 472          void usb_get_configuration (void)
+ 473          {
+ 474   1        Usb_clear_rx_setup();
+ 475   1        Usb_set_DIR();
+ 476   1      
+ 477   1        Usb_write_byte(usb_configuration_nb);
+ 478   1      
+ 479   1        Usb_set_tx_ready();
+ 480   1        while (!(Usb_tx_complete()));
+ 481   1        Usb_clear_tx_complete();
+ 482   1        while (!(Usb_rx_complete()));
+ 483   1        Usb_clear_rx();
+ 484   1        Usb_clear_DIR();
+ 485   1      }
+ 486          
+ 487          /*F**************************************************************************
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 9   
+
+ 488          * NAME: usb_get_interface
+ 489          *----------------------------------------------------------------------------
+ 490          * PARAMS:
+ 491          *
+ 492          * return:
+ 493          *----------------------------------------------------------------------------
+ 494          * PURPOSE: 
+ 495          * This function manages the GET_INTERFACE request.
+ 496          *----------------------------------------------------------------------------
+ 497          * EXAMPLE:
+ 498          *----------------------------------------------------------------------------
+ 499          * NOTE:
+ 500          *----------------------------------------------------------------------------
+ 501          * REQUIREMENTS: 
+ 502          *****************************************************************************/
+ 503          void usb_get_interface (void)
+ 504          {
+ 505   1        Usb_clear_rx_setup();
+ 506   1        Usb_set_DIR();
+ 507   1        Usb_set_stall_request();
+ 508   1        while (!Usb_stall_sent());
+ 509   1        Usb_clear_stall_request();
+ 510   1        Usb_clear_stalled();
+ 511   1        Usb_clear_DIR();
+ 512   1      }
+ 513          
+ 514          
+ 515          /*F**************************************************************************
+ 516          * NAME: usb_get_status
+ 517          *----------------------------------------------------------------------------
+ 518          * PARAMS:
+ 519          *
+ 520          * return:
+ 521          *----------------------------------------------------------------------------
+ 522          * PURPOSE: 
+ 523          * This function manages the GET_STATUS request.
+ 524          *----------------------------------------------------------------------------
+ 525          * EXAMPLE:
+ 526          *----------------------------------------------------------------------------
+ 527          * NOTE:
+ 528          *----------------------------------------------------------------------------
+ 529          * REQUIREMENTS: 
+ 530          *****************************************************************************/
+ 531          void usb_get_status (void)
+ 532          {
+ 533   1      Uchar wIndex;
+ 534   1      
+ 535   1        ACC = Usb_read_byte();                    /* dummy read */
+ 536   1        ACC = Usb_read_byte();                    /* dummy read */
+ 537   1        wIndex = Usb_read_byte();
+ 538   1        Usb_clear_rx_setup();
+ 539   1        Usb_set_DIR();
+ 540   1        switch(bmRequestType) 
+ 541   1        {
+ 542   2          case REQUEST_DEVICE_STATUS:    Usb_write_byte(SELF_POWERED);  break;
+ 543   2          
+ 544   2          case REQUEST_INTERFACE_STATUS: Usb_write_byte(0x00);          break;
+ 545   2          
+ 546   2          case REQUEST_ENDPOINT_STATUS:  wIndex = wIndex & MSK_EP_DIR;
+ 547   2                                         Usb_write_byte(endpoint_status[wIndex]);
+ 548   2                                         break;
+ 549   2        }
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 10  
+
+ 550   1        Usb_write_byte(0x00);
+ 551   1      
+ 552   1        Usb_set_tx_ready();
+ 553   1        while ((!(Usb_tx_complete())) || (Usb_setup_received()));
+ 554   1        Usb_clear_tx_complete();
+ 555   1        while ((!(Usb_rx_complete())) || (Usb_setup_received()));
+ 556   1        Usb_clear_rx();
+ 557   1        Usb_clear_DIR();
+ 558   1      }
+ 559          
+ 560          
+ 561          /*F**************************************************************************
+ 562          * NAME: usb_set_feature
+ 563          *----------------------------------------------------------------------------
+ 564          * PARAMS:
+ 565          *
+ 566          * return:
+ 567          *----------------------------------------------------------------------------
+ 568          * PURPOSE: 
+ 569          * This function manages the SET_FEATURE request.
+ 570          *----------------------------------------------------------------------------
+ 571          * EXAMPLE:
+ 572          *----------------------------------------------------------------------------
+ 573          * NOTE:
+ 574          *----------------------------------------------------------------------------
+ 575          * REQUIREMENTS: 
+ 576          *****************************************************************************/
+ 577          void usb_set_feature (void)
+ 578          {
+ 579   1        if (bmRequestType == ZERO_TYPE)
+ 580   1        {
+ 581   2          Usb_clear_rx_setup();
+ 582   2          Usb_set_stall_request();
+ 583   2          while (!(Usb_stall_sent()));
+ 584   2          Usb_clear_stall_request();
+ 585   2        }
+ 586   1        if (bmRequestType == INTERFACE_TYPE)
+ 587   1        {
+ 588   2          Usb_clear_rx_setup();
+ 589   2          Usb_set_stall_request();
+ 590   2          while (!(Usb_stall_sent()));
+ 591   2          Usb_clear_stall_request();
+ 592   2        }
+ 593   1        if (bmRequestType == ENDPOINT_TYPE)
+ 594   1        {
+ 595   2          if (Usb_read_byte() == 0x00)
+ 596   2          {
+ 597   3            ACC = Usb_read_byte();                /* dummy read */
+ 598   3            switch (Usb_read_byte())              /* check wIndex */
+ 599   3            {
+ 600   4              case ENDPOINT_CDC_IN:
+ 601   4              {
+ 602   5                Usb_select_ep(EP_CDC_IN);
+ 603   5                Usb_set_stall_request();
+ 604   5                Usb_select_ep(EP_CONTROL);
+ 605   5                endpoint_status[EP_CDC_IN] = 0x01;
+ 606   5                Usb_clear_rx_setup();
+ 607   5                Usb_set_tx_ready();
+ 608   5                while (!(Usb_tx_complete()));
+ 609   5                Usb_clear_tx_complete();
+ 610   5                break;
+ 611   5              }
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 11  
+
+ 612   4              case ENDPOINT_CDC_OUT:
+ 613   4              {
+ 614   5                Usb_select_ep(EP_CDC_OUT);
+ 615   5                Usb_set_stall_request();
+ 616   5                Usb_select_ep(EP_CONTROL);
+ 617   5                endpoint_status[EP_CDC_OUT] = 0x01;
+ 618   5                Usb_clear_rx_setup();
+ 619   5                Usb_set_tx_ready();
+ 620   5                while (!(Usb_tx_complete()));
+ 621   5                Usb_clear_tx_complete();
+ 622   5                break;
+ 623   5              }
+ 624   4              default:
+ 625   4              {
+ 626   5                Usb_clear_rx_setup();
+ 627   5                Usb_set_stall_request();
+ 628   5                while (!(Usb_stall_sent()));
+ 629   5                Usb_clear_stall_request();
+ 630   5                Usb_clear_stalled();
+ 631   5                break;
+ 632   5              }
+ 633   4            }
+ 634   3          }
+ 635   2        }
+ 636   1      }
+ 637          
+ 638          
+ 639          /*F**************************************************************************
+ 640          * NAME: usb_clear_feature
+ 641          *----------------------------------------------------------------------------
+ 642          * PARAMS:
+ 643          *
+ 644          * return:
+ 645          *----------------------------------------------------------------------------
+ 646          * PURPOSE: 
+ 647          * This function manages the SET_FEATURE request.
+ 648          *----------------------------------------------------------------------------
+ 649          * EXAMPLE:
+ 650          *----------------------------------------------------------------------------
+ 651          * NOTE:
+ 652          *----------------------------------------------------------------------------
+ 653          * REQUIREMENTS: 
+ 654          *****************************************************************************/
+ 655          void usb_clear_feature (void)
+ 656          {
+ 657   1        if (bmRequestType == ZERO_TYPE)
+ 658   1        {
+ 659   2          Usb_clear_rx_setup();
+ 660   2          Usb_set_stall_request();
+ 661   2          while (!(Usb_stall_sent()));
+ 662   2          Usb_clear_stall_request();
+ 663   2        }
+ 664   1        if (bmRequestType == INTERFACE_TYPE)
+ 665   1        {
+ 666   2          Usb_clear_rx_setup();
+ 667   2          Usb_set_stall_request();
+ 668   2          while (!(Usb_stall_sent()));
+ 669   2          Usb_clear_stall_request();
+ 670   2        }
+ 671   1        if (bmRequestType == ENDPOINT_TYPE)
+ 672   1        {
+ 673   2          if (Usb_read_byte() == 0x00)
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 12  
+
+ 674   2          {
+ 675   3            ACC = Usb_read_byte();                /* dummy read */
+ 676   3            switch (Usb_read_byte())              /* check wIndex */
+ 677   3            {
+ 678   4              case ENDPOINT_CDC_IN:
+ 679   4              {
+ 680   5                Usb_select_ep(EP_CDC_IN);
+ 681   5                Usb_clear_stall_request();
+ 682   5                usb_reset_endpoint(EP_CDC_IN);
+ 683   5                Usb_select_ep(EP_CONTROL);
+ 684   5                endpoint_status[EP_CDC_IN] = 0x00;
+ 685   5                Usb_clear_rx_setup();
+ 686   5                Usb_set_tx_ready();
+ 687   5                while (!(Usb_tx_complete()));
+ 688   5                Usb_clear_tx_complete();
+ 689   5                break;
+ 690   5              }
+ 691   4              case ENDPOINT_CDC_OUT:
+ 692   4              {
+ 693   5                Usb_select_ep(EP_CDC_OUT);
+ 694   5                Usb_clear_stall_request();
+ 695   5                usb_reset_endpoint(EP_CDC_OUT);
+ 696   5                Usb_select_ep(EP_CONTROL);
+ 697   5                endpoint_status[EP_CDC_OUT] = 0x00;
+ 698   5                Usb_clear_rx_setup();
+ 699   5                Usb_set_tx_ready();
+ 700   5                while (!(Usb_tx_complete()));
+ 701   5                Usb_clear_tx_complete();
+ 702   5                #ifndef NO_SUPPORT_USB_PING_PONG
+                        rx_bank = 0; 
+                        #endif
+ 705   5                break;
+ 706   5              }
+ 707   4              case ENDPOINT_0:
+ 708   4              {
+ 709   5                Usb_clear_rx_setup();
+ 710   5                Usb_set_tx_ready();
+ 711   5                while (!(Usb_tx_complete()));
+ 712   5                Usb_clear_tx_complete();
+ 713   5                break;
+ 714   5              }
+ 715   4              default:
+ 716   4              {
+ 717   5                Usb_clear_rx_setup();
+ 718   5                Usb_set_stall_request();
+ 719   5                while (!(Usb_stall_sent()));
+ 720   5                Usb_clear_stall_request();
+ 721   5                break;
+ 722   5              }
+ 723   4            }
+ 724   3          }
+ 725   2        }
+ 726   1      }
+ 727          
+ 728          
+ 729          
+ 730          
+ 731          /*F**************************************************************************
+ 732          * NAME: cdc_set_line_coding
+ 733          *----------------------------------------------------------------------------
+ 734          * PARAMS:
+ 735          *
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 13  
+
+ 736          * return:
+ 737          *----------------------------------------------------------------------------
+ 738          * PURPOSE: 
+ 739          * This function manages the SET_LINE_CODING CDC request.
+ 740          *----------------------------------------------------------------------------
+ 741          * EXAMPLE:
+ 742          *----------------------------------------------------------------------------
+ 743          * NOTE: command 0x20
+ 744          *----------------------------------------------------------------------------
+ 745          * REQUIREMENTS: 
+ 746          *****************************************************************************/
+ 747          void cdc_set_line_coding (void)
+ 748          {
+ 749   1        bdr = 0;
+ 750   1      
+ 751   1        Usb_clear_rx_setup();
+ 752   1        while (!(Usb_rx_complete()));
+ 753   1        line_coding[0] = Usb_read_byte();
+ 754   1        line_coding[1] = Usb_read_byte();
+ 755   1        line_coding[2] = Usb_read_byte();
+ 756   1        line_coding[3] = Usb_read_byte();
+ 757   1        line_coding[4] = Usb_read_byte();
+ 758   1        line_coding[5] = Usb_read_byte();
+ 759   1        line_coding[6] = Usb_read_byte();
+ 760   1        
+ 761   1        LSB0(bdr)=line_coding[0];
+ 762   1        LSB1(bdr)=line_coding[1];
+ 763   1        LSB2(bdr)=line_coding[2];
+ 764   1        LSB3(bdr)=line_coding[3];
+ 765   1      
+ 766   1        Usb_clear_rx();
+ 767   1      
+ 768   1        Usb_set_tx_ready();                          /* send a ZLP for STATUS phase */
+ 769   1        while(!(Usb_tx_complete()));
+ 770   1        Usb_clear_tx_complete();
+ 771   1      #ifndef HELLO_WORLD_DEMO
+                uart_set_baudrate(bdr);
+              #endif
+ 774   1      }
+ 775          
+ 776          
+ 777          /*F**************************************************************************
+ 778          * NAME: cdc_get_line_coding
+ 779          *----------------------------------------------------------------------------
+ 780          * PARAMS:
+ 781          *
+ 782          * return:
+ 783          *----------------------------------------------------------------------------
+ 784          * PURPOSE: 
+ 785          * This function manages the SET_LINE_CODING CDC request.
+ 786          *----------------------------------------------------------------------------
+ 787          * EXAMPLE:
+ 788          *----------------------------------------------------------------------------
+ 789          * NOTE: command 0x21
+ 790          *----------------------------------------------------------------------------
+ 791          * REQUIREMENTS: 
+ 792          *****************************************************************************/
+ 793          void cdc_get_line_coding (void)
+ 794          {
+ 795   1        Usb_clear_rx_setup();
+ 796   1        Usb_set_DIR();
+ 797   1      
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 14  
+
+ 798   1        Usb_write_byte(line_coding[0]);
+ 799   1        Usb_write_byte(line_coding[1]);
+ 800   1        Usb_write_byte(line_coding[2]);
+ 801   1        Usb_write_byte(line_coding[3]);
+ 802   1        Usb_write_byte(line_coding[4]);
+ 803   1        Usb_write_byte(line_coding[5]);
+ 804   1        Usb_write_byte(line_coding[6]);
+ 805   1      
+ 806   1        Usb_set_tx_ready();                          
+ 807   1        while(!(Usb_tx_complete()));
+ 808   1        Usb_clear_tx_complete();
+ 809   1      
+ 810   1        while (!(Usb_rx_complete()));           /* wait a ZLP for STATUS phase */
+ 811   1        Usb_clear_rx();
+ 812   1      }
+ 813          
+ 814          
+ 815          /*F**************************************************************************
+ 816          * NAME: cdc_set_control_line_state
+ 817          *----------------------------------------------------------------------------
+ 818          * PARAMS:
+ 819          *
+ 820          * return:
+ 821          *----------------------------------------------------------------------------
+ 822          * PURPOSE: 
+ 823          * This function manages the SET_CONTROL_LINE_LINE_STATE CDC request.
+ 824          *----------------------------------------------------------------------------
+ 825          * EXAMPLE:
+ 826          *----------------------------------------------------------------------------
+ 827          * NOTE: command 0x21
+ 828          *----------------------------------------------------------------------------
+ 829          * REQUIREMENTS: 
+ 830          *****************************************************************************/
+ 831          void cdc_set_control_line_state (void)
+ 832          {
+ 833   1        uart_hardware_flow_control = ((Usb_read_byte()&0x03 == 0) ? FALSE : TRUE);
+ 834   1      
+ 835   1        Usb_clear_rx_setup();
+ 836   1      
+ 837   1        Usb_set_tx_ready();                          
+ 838   1        while(!(Usb_tx_complete()));           /* send a ZLP for STATUS phase */
+ 839   1        Usb_clear_tx_complete();
+ 840   1      
+ 841   1      }
+ 842          
+ 843          
+ 844          /*F**************************************************************************
+ 845          * NAME: cdc_send_break
+ 846          *----------------------------------------------------------------------------
+ 847          * PARAMS:
+ 848          *
+ 849          * return:
+ 850          *----------------------------------------------------------------------------
+ 851          * PURPOSE: 
+ 852          * This function manages the SEND_BREAK CDC request.
+ 853          *----------------------------------------------------------------------------
+ 854          * EXAMPLE:
+ 855          *----------------------------------------------------------------------------
+ 856          * NOTE: command 0x23
+ 857          *----------------------------------------------------------------------------
+ 858          * REQUIREMENTS: 
+ 859          *****************************************************************************/
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 15  
+
+ 860          void cdc_send_break (void)
+ 861          {
+ 862   1      }
+ 863          
+ 864          /*F**************************************************************************
+ 865          * NAME: cdc_send_encapsulated_command
+ 866          *----------------------------------------------------------------------------
+ 867          * PARAMS:
+ 868          *
+ 869          * return:
+ 870          *----------------------------------------------------------------------------
+ 871          * PURPOSE: 
+ 872          * This function manages the SEND_ENCAPSULATED_COMMAND CDC request.
+ 873          *----------------------------------------------------------------------------
+ 874          * EXAMPLE:
+ 875          *----------------------------------------------------------------------------
+ 876          * NOTE: command 0x00
+ 877          *----------------------------------------------------------------------------
+ 878          * REQUIREMENTS: 
+ 879          *****************************************************************************/
+ 880          void cdc_send_encapsulated_command (void)
+ 881          {
+ 882   1      }
+ 883          
+ 884          /*F**************************************************************************
+ 885          * NAME: cdc_get_encapsulated_command
+ 886          *----------------------------------------------------------------------------
+ 887          * PARAMS:
+ 888          *
+ 889          * return:
+ 890          *----------------------------------------------------------------------------
+ 891          * PURPOSE: 
+ 892          * This function manages the GET_ENCAPSULATED_COMMAND CDC request.
+ 893          *----------------------------------------------------------------------------
+ 894          * EXAMPLE:
+ 895          *----------------------------------------------------------------------------
+ 896          * NOTE: command 0x00
+ 897          *----------------------------------------------------------------------------
+ 898          * REQUIREMENTS: 
+ 899          *****************************************************************************/
+ 900          void cdc_get_encapsulated_command (void)
+ 901          {
+ 902   1      }
+ 903          
+ 904          
+ 905          /*_____ E N D  O F  F I L E  _________________________________________________*/
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1192    ----
+   CONSTANT SIZE    =    167    ----
+   XDATA SIZE       =     24       4
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

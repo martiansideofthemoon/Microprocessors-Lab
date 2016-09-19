@@ -1,0 +1,473 @@
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE SCHEDULER
+OBJECT MODULE PLACED IN scheduler.obj
+COMPILER INVOKED BY: C:\Keil123\C51\BIN\C51.exe modules\scheduler\scheduler.c LARGE OPTIMIZE(9,SPEED) BROWSE INCDIR(.\;.
+                    -\;.\) DEFINE(KEIL) DEBUG OBJECTEXTEND PRINT(.\scheduler.lst) TABS(2) OBJECT(scheduler.obj)
+
+line level    source
+
+   1          /*C**************************************************************************
+   2          * NAME:         scheduler.c
+   3          *----------------------------------------------------------------------------
+   4          * Copyright (c) 2004 Atmel.
+   5          *----------------------------------------------------------------------------
+   6          * RELEASE:      c5131-usb-cdc-1_2_1      
+   7          * REVISION:     1.9     
+   8          *----------------------------------------------------------------------------
+   9          * PURPOSE:
+  10          * This file contains the scheduler routines
+  11          *
+  12          * NOTES:
+  13          * Configuration:
+  14          *   - SCHEDULER_TYPE in scheduler.h header file
+  15          *   - Task & init for at least task number 1 must be defined
+  16          *****************************************************************************/
+  17          
+  18          /*_____ I N C L U D E S ____________________________________________________*/
+  19          #define _SCHEDULER_C_
+  20          #include "config.h"                         /* system definition */
+  21          #include "scheduler.h"                      /* scheduler definition */
+  22          
+  23          
+  24          /*_____ M A C R O S ________________________________________________________*/
+  25          
+  26          
+  27          /*_____ D E F I N I T I O N ________________________________________________*/
+  28          #if SCHEDULER_TYPE != SCHEDULER_FREE
+              /*V**************************************************************************
+              * NAME: scheduler_tick_flag
+              *----------------------------------------------------------------------------
+              * PURPOSE: 
+              * When SCHEDULER_TYPE != SCHEDULER_FREE, this flag control task calls.
+              *****************************************************************************/
+                bit   scheduler_tick_flag;
+              #endif
+  37          
+  38          #ifdef TOKEN_MODE
+              /*V**************************************************************************
+              * NAME: token
+              *----------------------------------------------------------------------------
+              * PURPOSE: 
+              * Can be used to avoid that some tasks executes at same time. 
+              * The tasks check if the token is free before executing. 
+              * If the token is free, the tasks reserve it at the begin of the execution 
+              * and release it at the end of the execution to enable next waiting tasks to 
+              * run.  
+              *****************************************************************************/
+              Uchar token;
+              #endif
+  51          
+  52          /*_____ D E C L A R A T I O N ______________________________________________*/
+  53          /*F**************************************************************************
+  54          * NAME:     scheduler_init
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 2   
+
+  55          *----------------------------------------------------------------------------
+  56          * PARAMS:
+  57          *
+  58          * return:
+  59          *----------------------------------------------------------------------------
+  60          * PURPOSE: 
+  61          *   Scheduler initialization
+  62          *----------------------------------------------------------------------------
+  63          * EXAMPLE:
+  64          *----------------------------------------------------------------------------
+  65          * NOTE:
+  66          *   Task_x_init() and Task_x_fct() are defined in config.h
+  67          *----------------------------------------------------------------------------
+  68          * REQUIREMENTS:
+  69          *****************************************************************************/
+  70          void scheduler_init (void)
+  71          {
+  72   1      #ifdef Scheduler_time_init
+  73   1        Scheduler_time_init(); // start time base
+  74   1      #endif
+  75   1      #ifdef TOKEN_MODE
+              token=TOKEN_FREE;
+              #endif
+  78   1      #ifdef Scheduler_task_1_init
+  79   1        Scheduler_task_1_init();  
+  80   1        Scheduler_call_next_init();
+  81   1      #endif
+  82   1      #ifdef Scheduler_task_2_init
+                Scheduler_task_2_init();  
+                Scheduler_call_next_init();
+              #endif
+  86   1      #ifdef Scheduler_task_3_init
+                Scheduler_task_3_init();  
+                Scheduler_call_next_init();
+              #endif
+  90   1      #ifdef Scheduler_task_4_init
+                Scheduler_task_4_init();  
+                Scheduler_call_next_init();
+              #endif
+  94   1      #ifdef Scheduler_task_5_init
+                Scheduler_task_5_init();  
+                Scheduler_call_next_init();
+              #endif
+  98   1      #ifdef Scheduler_task_6_init
+                Scheduler_task_6_init();  
+                Scheduler_call_next_init();
+              #endif
+ 102   1      #ifdef Scheduler_task_7_init
+                Scheduler_task_7_init();  
+                Scheduler_call_next_init();
+              #endif
+ 106   1      #ifdef Scheduler_task_8_init
+                Scheduler_task_8_init();  
+                Scheduler_call_next_init();
+              #endif
+ 110   1      #ifdef Scheduler_task_9_init
+                Scheduler_task_9_init();  
+                Scheduler_call_next_init();
+              #endif
+ 114   1      #ifdef Scheduler_task_10_init
+                Scheduler_task_10_init();
+                Scheduler_call_next_init();
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 3   
+
+              #endif
+ 118   1      #ifdef Scheduler_task_11_init
+                Scheduler_task_11_init();
+                Scheduler_call_next_init();
+              #endif
+ 122   1        Scheduler_reset_tick_flag();
+ 123   1      }
+ 124          
+ 125          
+ 126          /*F**************************************************************************
+ 127          * NAME:     scheduler_tasks
+ 128          *----------------------------------------------------------------------------
+ 129          * PARAMS:
+ 130          *
+ 131          * return:
+ 132          *----------------------------------------------------------------------------
+ 133          * PURPOSE:
+ 134          *   Task execution scheduler 
+ 135          *----------------------------------------------------------------------------
+ 136          * EXAMPLE:
+ 137          *----------------------------------------------------------------------------
+ 138          * NOTE:
+ 139          *----------------------------------------------------------------------------
+ 140          * REQUIREMENTS:
+ 141          *****************************************************************************/
+ 142          void scheduler_tasks (void)
+ 143          {
+ 144   1      scheduler_empty_fct(); // only to avoid uncalled segment warning if the empty function is not used
+ 145   1      #ifdef SCHEDULER_ENABLE_IT
+              Enable_interrupt(); // 80C51 All IT on
+              #endif
+ 148   1      for(;;)
+ 149   1        {
+ 150   2          Scheduler_new_schedule();
+ 151   2        #ifdef Scheduler_task_1
+ 152   2          Scheduler_task_1();
+ 153   2          Scheduler_call_next_task();
+ 154   2        #endif
+ 155   2        #ifdef Scheduler_task_2
+                  Scheduler_task_2();
+                  Scheduler_call_next_task();
+                #endif
+ 159   2        #ifdef Scheduler_task_3
+                  Scheduler_task_3();
+                  Scheduler_call_next_task();
+                #endif
+ 163   2        #ifdef Scheduler_task_4
+                  Scheduler_task_4();
+                  Scheduler_call_next_task();
+                #endif
+ 167   2        #ifdef Scheduler_task_5
+                  Scheduler_task_5();
+                  Scheduler_call_next_task();
+                #endif
+ 171   2        #ifdef Scheduler_task_6
+                  Scheduler_task_6();
+                  Scheduler_call_next_task();
+                #endif
+ 175   2        #ifdef Scheduler_task_7
+                  Scheduler_task_7();
+                  Scheduler_call_next_task();
+                #endif
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 4   
+
+ 179   2        #ifdef Scheduler_task_8
+                  Scheduler_task_8();
+                  Scheduler_call_next_task();
+                #endif
+ 183   2        #ifdef Scheduler_task_9
+                  Scheduler_task_9();
+                  Scheduler_call_next_task();
+                #endif
+ 187   2        #ifdef Scheduler_task_10
+                  Scheduler_task_10();
+                  Scheduler_call_next_task();
+                #endif
+ 191   2        #ifdef Scheduler_task_11
+                  Scheduler_task_11();
+                  Scheduler_call_next_task();
+                #endif
+ 195   2        }
+ 196   1      }
+ 197          
+ 198          
+ 199          /*F**************************************************************************
+ 200          * NAME:     scheduler
+ 201          *----------------------------------------------------------------------------
+ 202          * PARAMS:
+ 203          *
+ 204          * return:
+ 205          *----------------------------------------------------------------------------
+ 206          * PURPOSE:
+ 207          * Simply call this task to init & run the scheduler
+ 208          *----------------------------------------------------------------------------
+ 209          * EXAMPLE:
+ 210          *----------------------------------------------------------------------------
+ 211          * NOTE:
+ 212          *----------------------------------------------------------------------------
+ 213          * REQUIREMENTS:
+ 214          *****************************************************************************/
+ 215          void scheduler (void)
+ 216          {
+ 217   1      scheduler_init();
+ 218   1      scheduler_tasks();
+ 219   1      }
+ 220          
+ 221          
+ 222          /*F**************************************************************************
+ 223          * NAME:    scheduler_empty_fct
+ 224          *----------------------------------------------------------------------------
+ 225          * PARAMS:
+ 226          *
+ 227          * return:
+ 228          *----------------------------------------------------------------------------
+ 229          * PURPOSE:
+ 230          * This function does nothing 
+ 231          *----------------------------------------------------------------------------
+ 232          * EXAMPLE:
+ 233          *----------------------------------------------------------------------------
+ 234          * NOTE:
+ 235          *----------------------------------------------------------------------------
+ 236          * REQUIREMENTS:
+ 237          *****************************************************************************/
+ 238          void scheduler_empty_fct (void)
+ 239          {
+ 240   1      }
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 5   
+
+ 241          
+ 242          
+ 243          #if 0 // End of file used only by Chejudo to simplify change from old scheduler
+              #include "lib_mcu\timer\timer_drv.h"        /* timer definition */
+              
+              extern  data    Byte    gl_cpt_tick;        /* general tick counter */
+              extern  data    Byte    gl_kbd_tick;        /* keypad tick counter */
+              extern  data    Byte    gl_mem_tick;        /* memory tick counter */
+              
+              
+              #if (SCH_TIMER == SCH_TIMER0)
+              /****************************************************************************
+              * NAME:     sch_time_init
+              *----------------------------------------------------------------------------
+              * PARAMS:
+              *
+              * return:
+              *----------------------------------------------------------------------------
+              * PURPOSE:
+              *   Scheduler time base (timer 0) initialization
+              *----------------------------------------------------------------------------
+              * EXAMPLE:
+              *----------------------------------------------------------------------------
+              * NOTE:
+              *   mode 16-bit Timer, Time counter
+              *   T0_PRIO to be defined in config.h
+              *   TIM_LOW & TIM_HIGH defined in scheduler.h
+              *----------------------------------------------------------------------------
+              * REQUIREMENTS:
+              *****************************************************************************/
+              void sch_time_init (void)
+              {
+                T0_init(T0_NOT_GATED, T0_TIMER, T0_MODE_1);
+                T0_set_low(TIM_LOW);
+                T0_set_high(TIM_HIGH);
+                t0_set_prio(T0_PRIO);                     /* set-up priority */
+                T0_enable_int();                          /* enable interrupt */
+                T0_start();                               /* start time base */
+              }
+              
+              /****************************************************************************
+              * NAME:     sch_timer_int
+              *----------------------------------------------------------------------------
+              * PARAMS:
+              *
+              * return:
+              *----------------------------------------------------------------------------
+              * PURPOSE:
+              *   Timer 0 interrupt function
+              *----------------------------------------------------------------------------
+              * EXAMPLE:
+              *----------------------------------------------------------------------------
+              * NOTE:
+              *   IRQ_T0 defined in extsnd1.h
+              *----------------------------------------------------------------------------
+              * REQUIREMENTS:
+              ******************************************************************************/
+              Interrupt (sch_timer_int(void), IRQ_T0) 
+              {
+              //  T0_stop();                                /* stop timer */
+                T0_set_low(TIM_LOW);                      /* reload timer */ 
+                T0_set_high(TIM_HIGH);
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 6   
+
+              //  T0_start();                               /* restart timer */
+              
+              #if (SCH_TYPE != SCH_FREE)
+                sch_tick_flag = TRUE;
+              #endif
+                /* increment task tick counters */
+                gl_cpt_tick++;                            /* general timer */
+                gl_kbd_tick++;                            /* keyboard timer */
+                gl_mem_tick++;                            /* memory timer */
+              }
+              
+              
+              #elif (SCH_TIMER == SCH_TIMER1)
+              /****************************************************************************
+              * NAME:     sch_time_init
+              *----------------------------------------------------------------------------
+              * PARAMS:
+              *
+              * return:
+              *----------------------------------------------------------------------------
+              * PURPOSE:
+              *   Scheduler time base (timer 1) initialization
+              *----------------------------------------------------------------------------
+              * EXAMPLE:
+              *----------------------------------------------------------------------------
+              * NOTE:
+              *   mode 16-bit Timer, Time counter
+              *   T1_PRIO to be defined in config.h
+              *   TIM_LOW & TIM_HIGH defined in scheduler.h
+              *----------------------------------------------------------------------------
+              * REQUIREMENTS:
+              *****************************************************************************/
+              void sch_time_init (void)
+              {
+                T1_init(T1_NOT_GATED, T1_TIMER, T1_MODE_1);
+                T1_set_low(TIM_LOW);
+                T1_set_high(TIM_HIGH);
+                t1_set_prio(T1_PRIO);                     /* set-up priority */
+                T1_enable_int();                          /* enable interrupt */
+                T1_start();                               /* start time base */
+              }
+              
+              /****************************************************************************
+              * NAME:     sch_timer_int
+              *----------------------------------------------------------------------------
+              * PARAMS:
+              *
+              * return:
+              *----------------------------------------------------------------------------
+              * PURPOSE:
+              *   Timer 1 interrupt function
+              *----------------------------------------------------------------------------
+              * EXAMPLE:
+              *----------------------------------------------------------------------------
+              * NOTE:
+              *   IRQ_T1 defined in extsnd1.h
+              *----------------------------------------------------------------------------
+              * REQUIREMENTS:
+              *****************************************************************************/
+              Interrupt (sch_timer_int(void), IRQ_T1) 
+              {
+              //  T1_stop();                                /* stop timer */
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 7   
+
+                T1_set_low(TIM_LOW);                      /* reload timer */
+                T1_set_high(TIM_HIGH);
+              //  T1_start();                               /* restart timer */
+              
+              #if (SCH_TYPE != SCH_FREE)
+                sch_tick_flag = TRUE;
+              #endif
+              
+                gl_cpt_tick++;
+              }
+              
+              
+              #elif (SCH_TIMER == SCH_TIMER2)
+              /****************************************************************************
+              * NAME:     sch_time_init
+              *----------------------------------------------------------------------------
+              * PARAMS:
+              *
+              * return:
+              *----------------------------------------------------------------------------
+              * PURPOSE:
+              *   Scheduler time base (timer 2) initialization
+              *----------------------------------------------------------------------------
+              * EXAMPLE:
+              *----------------------------------------------------------------------------
+              * NOTE:
+              *   mode 16-bit auto-reload
+              *   T2_PRIO to be defined in config.h
+              *   TIM_LOW & TIM_HIGH defined in scheduler.h
+              *----------------------------------------------------------------------------
+              * REQUIREMENTS:
+              *****************************************************************************/
+              void sch_time_init (void)
+              {
+                T2_init(T2_AUTO_RELOAD, T2_TIMER, T2_NOT_GATED);
+                T2_set_low(TIM_LOW);
+                T2_set_high(TIM_HIGH);
+                t2_set_prio(T2_PRIO);                     /* set-up priority */
+                T2_enable_int();                          /* enable interrupt */
+                T2_start();                               /* start time base */
+              }
+              
+              /****************************************************************************
+              * NAME:     sch_timer_int
+              *----------------------------------------------------------------------------
+              * PARAMS:
+              *
+              * return:
+              *----------------------------------------------------------------------------
+              * PURPOSE:
+              *   Timer 2 interrupt function
+              *----------------------------------------------------------------------------
+              * EXAMPLE:
+              *----------------------------------------------------------------------------
+              * NOTE:
+              *   IRQ_T2 defined in extsnd1.h
+              *----------------------------------------------------------------------------
+              * REQUIREMENTS:
+              ******************************************************************************/
+              Interrupt (sch_timer_int(void), IRQ_T2) 
+              {
+                T2_clr_ovf;                               /* ack interrupt */
+C51 COMPILER V9.53.0.0   SCHEDULER                                                         09/19/2016 17:02:22 PAGE 8   
+
+              
+              #if (SCH_TYPE != SCH_FREE)
+                sch_tick_flag = TRUE;
+              #endif
+                gl_cpt_tick++;
+              }
+              #endif
+              
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     21    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
