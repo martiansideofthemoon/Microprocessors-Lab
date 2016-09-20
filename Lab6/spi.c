@@ -27,7 +27,7 @@ sbit ONULL = P1^0;
 bit transmit_completed= 0;					// To check if spi data transmit is complete
 bit offset_null = 0;								// Check if offset nulling is enabled
 bit roundoff = 0;
-int adcVal=0, avgVal=0, initVal=0, adcValue = 0;
+int adcVal=0, avgVal=0, initVal=0, adcValue = 0, value=0;
 unsigned char serial_data;
 unsigned char data_save_high;
 unsigned char data_save_low;
@@ -111,7 +111,21 @@ void timer0_ISR (void) interrupt 1
 	//Increment Overflow 
 	count = count + 1;
 	//Write averaging of 10 samples code here
-
+	if (count % 15 == 0) {
+		count = 0;
+		value = adcVal*5000.0/1024;
+		LCD_Ready();
+		LCD_CmdWrite(0x80);
+		voltage[3] = '0' + value%10;
+		value = value/10;
+		voltage[2] = '0' + value%10;
+		value = value/10;
+		voltage[1] = '0' + value%10;
+		value = value/10;
+		voltage[0] = '0' + value%10;
+		LCD_StringWrite(voltage, 4);
+		LCD_StringWrite(" mV", 3);
+	}
 }
 
 
@@ -148,9 +162,9 @@ void Timer_Init()
 	// 12 clocks. FOr 24 MHz, it takes 65536/2 uS to overflow
     
 	//Initialize TH0
-	TH0 = 0x00;
+	TH0 = 0x3C;
 	//Initialize TL0
-	TL0 = 0x00;
+	TL0 = 0xB0;
 	//Configure TMOD 
 	TMOD = 0x01;
 	//Set ET0
