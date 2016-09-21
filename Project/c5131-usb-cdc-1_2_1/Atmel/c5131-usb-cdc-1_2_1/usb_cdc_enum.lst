@@ -1,4 +1,4 @@
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 1   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 1   
 
 
 C51 COMPILER V9.53.0.0, COMPILATION OF MODULE USB_CDC_ENUM
@@ -62,7 +62,7 @@ line level    source
   52            struct usb_st_endpoint_descriptor       ep1 ;
   53            struct usb_st_endpoint_descriptor       ep2 ;
   54           }
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 2   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 2   
 
   55            usb_configuration =
   56            {
@@ -126,7 +126,7 @@ line level    source
  113          {
  114   1        endpoint_status[1] = 0x00;
  115   1        endpoint_status[2] = 0x00;
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 3   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 3   
 
  116   1        endpoint_status[3] = 0x00;
  117   1        usb_configuration_nb = 0x00;
@@ -190,7 +190,7 @@ line level    source
  175          void usb_enumeration_process (void)
  176          { 
  177   1        Usb_select_ep(EP_CONTROL);
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 4   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 4   
 
  178   1        usb_read_request();
  179   1      }
@@ -254,7 +254,7 @@ line level    source
  237   2            cdc_get_line_coding();           break;
  238   2          case SET_CONTROL_LINE_STATE:
  239   2            cdc_set_control_line_state();    break;
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 5   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 5   
 
  240   2          case SEND_BREAK:
  241   2            cdc_send_break();                break;
@@ -318,7 +318,7 @@ line level    source
  299          * EXAMPLE:
  300          *----------------------------------------------------------------------------
  301          * NOTE:
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 6   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 6   
 
  302          *----------------------------------------------------------------------------
  303          * REQUIREMENTS: 
@@ -382,7 +382,7 @@ line level    source
  361   2          {
  362   3            data_to_transfer = sizeof (usb_device_descriptor);
  363   3            pbuffer = &(usb_device_descriptor.bLength);
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 7   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 7   
 
  364   3            break;
  365   3          }
@@ -446,7 +446,7 @@ line level    source
  423   1        {
  424   2          Usb_clear_tx_ready();
  425   2          Usb_clear_rx();
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 8   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 8   
 
  426   2          return;
  427   2        }
@@ -510,7 +510,7 @@ line level    source
  485   1      }
  486          
  487          /*F**************************************************************************
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 9   
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 9   
 
  488          * NAME: usb_get_interface
  489          *----------------------------------------------------------------------------
@@ -574,7 +574,7 @@ line level    source
  547   2                                         Usb_write_byte(endpoint_status[wIndex]);
  548   2                                         break;
  549   2        }
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 10  
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 10  
 
  550   1        Usb_write_byte(0x00);
  551   1      
@@ -638,7 +638,7 @@ line level    source
  609   5                Usb_clear_tx_complete();
  610   5                break;
  611   5              }
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 11  
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 11  
 
  612   4              case ENDPOINT_CDC_OUT:
  613   4              {
@@ -702,7 +702,7 @@ line level    source
  671   1        if (bmRequestType == ENDPOINT_TYPE)
  672   1        {
  673   2          if (Usb_read_byte() == 0x00)
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 12  
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 12  
 
  674   2          {
  675   3            ACC = Usb_read_byte();                /* dummy read */
@@ -766,7 +766,7 @@ line level    source
  733          *----------------------------------------------------------------------------
  734          * PARAMS:
  735          *
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 13  
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 13  
 
  736          * return:
  737          *----------------------------------------------------------------------------
@@ -830,7 +830,7 @@ line level    source
  795   1        Usb_clear_rx_setup();
  796   1        Usb_set_DIR();
  797   1      
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 14  
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 14  
 
  798   1        Usb_write_byte(line_coding[0]);
  799   1        Usb_write_byte(line_coding[1]);
@@ -894,7 +894,7 @@ line level    source
  857          *----------------------------------------------------------------------------
  858          * REQUIREMENTS: 
  859          *****************************************************************************/
-C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/19/2016 17:02:23 PAGE 15  
+C51 COMPILER V9.53.0.0   USB_CDC_ENUM                                                      09/21/2016 23:11:22 PAGE 15  
 
  860          void cdc_send_break (void)
  861          {

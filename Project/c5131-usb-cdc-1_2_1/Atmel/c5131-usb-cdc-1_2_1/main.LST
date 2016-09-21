@@ -1,4 +1,4 @@
-C51 COMPILER V9.53.0.0   MAIN                                                              09/19/2016 17:02:22 PAGE 1   
+C51 COMPILER V9.53.0.0   MAIN                                                              09/21/2016 23:11:21 PAGE 1   
 
 
 C51 COMPILER V9.53.0.0, COMPILATION OF MODULE MAIN
@@ -62,25 +62,19 @@ line level    source
               #endif
   53   1      
   54   1        Enable_interrupt();
-C51 COMPILER V9.53.0.0   MAIN                                                              09/19/2016 17:02:22 PAGE 2   
+C51 COMPILER V9.53.0.0   MAIN                                                              09/21/2016 23:11:21 PAGE 2   
 
   55   1      
   56   1        scheduler();
-  57   1        while (1) {
-  58   2          if ( uart_usb_tx_ready() && uart_usb_test_hit() ) {
-  59   3            char c = uart_usb_getchar();
-  60   3            uart_usb_putchar(c);
-  61   3          }
-  62   2        }
-  63   1      }
-  64          
-  65          
+  57   1      }
+  58          
+  59          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     31    ----
+   CODE SIZE        =      8    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =   ----       1
+   XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

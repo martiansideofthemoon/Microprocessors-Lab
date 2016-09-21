@@ -54,12 +54,6 @@ void main (void)
   Enable_interrupt();
 
   scheduler();
-	//while (1) {
-	//	if ( uart_usb_tx_ready() && uart_usb_test_hit() ) {
-	//		char c = uart_usb_getchar();
-	//		uart_usb_putchar(c);
-	//	}
-	//}
 }
 
 

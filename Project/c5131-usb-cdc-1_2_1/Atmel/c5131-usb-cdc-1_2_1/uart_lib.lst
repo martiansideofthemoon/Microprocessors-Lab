@@ -1,4 +1,4 @@
-C51 COMPILER V9.53.0.0   UART_LIB                                                          09/19/2016 17:02:23 PAGE 1   
+C51 COMPILER V9.53.0.0   UART_LIB                                                          09/21/2016 23:11:22 PAGE 1   
 
 
 C51 COMPILER V9.53.0.0, COMPILATION OF MODULE UART_LIB
@@ -62,7 +62,7 @@ line level    source
               #else
   53          char _ConstType_ txt_logo_atmel[]="Atmel (R)\nc5131-usb-cdc-1_2_1\n\n";
   54          #endif
-C51 COMPILER V9.53.0.0   UART_LIB                                                          09/19/2016 17:02:23 PAGE 2   
+C51 COMPILER V9.53.0.0   UART_LIB                                                          09/21/2016 23:11:22 PAGE 2   
 
   55          
   56          /*_____ D E F I N I T I O N ________________________________________________*/
@@ -126,7 +126,7 @@ line level    source
               uart_gotoxy(1,25);
               #endif
               }
-C51 COMPILER V9.53.0.0   UART_LIB                                                          09/19/2016 17:02:23 PAGE 3   
+C51 COMPILER V9.53.0.0   UART_LIB                                                          09/21/2016 23:11:22 PAGE 3   
 
               
               #ifdef ENABLE_SPLASH_SCREEN
@@ -190,7 +190,7 @@ line level    source
                 {
                 #ifndef DISABLE_VT100
                 uart_putchar(27);
-C51 COMPILER V9.53.0.0   UART_LIB                                                          09/19/2016 17:02:23 PAGE 4   
+C51 COMPILER V9.53.0.0   UART_LIB                                                          09/21/2016 23:11:22 PAGE 4   
 
                 uart_putchar(0x5B);
                 if (y>9) uart_putchar('0'+(y/10));
@@ -254,7 +254,7 @@ line level    source
  238          /*F**************************************************************************
  239          * NAME: uart_putchar
  240          *----------------------------------------------------------------------------
-C51 COMPILER V9.53.0.0   UART_LIB                                                          09/19/2016 17:02:23 PAGE 5   
+C51 COMPILER V9.53.0.0   UART_LIB                                                          09/21/2016 23:11:22 PAGE 5   
 
  241          * PARAMS:   
  242          * ch: character to print on UART
@@ -318,7 +318,7 @@ line level    source
  300          * NOTE: 
  301          *----------------------------------------------------------------------------
  302          * REQUIREMENTS: 
-C51 COMPILER V9.53.0.0   UART_LIB                                                          09/19/2016 17:02:23 PAGE 6   
+C51 COMPILER V9.53.0.0   UART_LIB                                                          09/21/2016 23:11:22 PAGE 6   
 
  303          *****************************************************************************/
  304          void uart_set_baudrate(long int bdr)      
@@ -382,7 +382,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
-C51 COMPILER V9.53.0.0   UART_LIB                                                          09/19/2016 17:02:23 PAGE 7   
+C51 COMPILER V9.53.0.0   UART_LIB                                                          09/21/2016 23:11:22 PAGE 7   
 
    BIT SIZE         =      1    ----
 END OF MODULE INFORMATION.

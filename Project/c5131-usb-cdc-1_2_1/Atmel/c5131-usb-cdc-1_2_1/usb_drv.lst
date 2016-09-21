@@ -1,4 +1,4 @@
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 1   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 1   
 
 
 C51 COMPILER V9.53.0.0, COMPILATION OF MODULE USB_DRV
@@ -62,7 +62,7 @@ line level    source
   52          *                BULK_OUT
   53          *                INTERRUPT_IN
   54          *                INTERRUPT_OUT
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 2   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 2   
 
   55          *                ISOCHRONOUS_IN
   56          *                ISOCHRONOUS_OUT
@@ -126,7 +126,7 @@ line level    source
  114          * This function returns the number of byte stored in the currently selected
  115          * endpoint.
  116          *----------------------------------------------------------------------------
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 3   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 3   
 
  117          * EXAMPLE:
  118          *----------------------------------------------------------------------------
@@ -190,7 +190,7 @@ line level    source
  176          * REQUIREMENTS: 
  177          *****************************************************************************/
  178          Uchar* usb_send_ep0_packet (Uchar* tbuf, Uchar data_length)
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 4   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 4   
 
  179          {
  180   1        Usb_select_ep(0);
@@ -254,7 +254,7 @@ line level    source
  238          * usb_read_packet(4,&first_data,usb_get_nb_byte); // read packet from ep 4
  239          * Usb_clear_rx();                                 // acknowledge the transmit
  240          *----------------------------------------------------------------------------
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 5   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 5   
 
  241          * NOTE:
  242          * rbuf is incremented of 'data_length'.
@@ -318,7 +318,7 @@ line level    source
  300          
  301          /*F**************************************************************************
  302          * NAME: configure_usb_clock
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 6   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 6   
 
  303          *----------------------------------------------------------------------------
  304          * PARAMS:
@@ -382,7 +382,7 @@ line level    source
                 Pll_enable();
               #endif
  364   1      
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 7   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 7   
 
  365   1      #if FOSC == 18000
                 Pll_set_div(PLL_18MHz);
@@ -446,7 +446,7 @@ line level    source
                   {
                     Usb_clear_EXT48();                  /* PLL output supposed */
                     Pll_set_div(pll_value[i]);          /* configure PLL */
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 8   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 8   
 
                     Pll_enable();
                   }
@@ -510,7 +510,7 @@ line level    source
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
    CODE SIZE        =    179    ----
-C51 COMPILER V9.53.0.0   USB_DRV                                                           09/19/2016 17:02:23 PAGE 9   
+C51 COMPILER V9.53.0.0   USB_DRV                                                           09/21/2016 23:11:22 PAGE 9   
 
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----

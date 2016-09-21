@@ -1,4 +1,4 @@
-C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 1   
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/21/2016 23:11:23 PAGE 1   
 
 
 C51 COMPILER V9.53.0.0, COMPILATION OF MODULE UART_USB_LIB
@@ -62,7 +62,7 @@ line level    source
   52          
   53          /*F**************************************************************************
   54          * NAME: uart_usb_test_hit
-C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 2   
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/21/2016 23:11:23 PAGE 2   
 
   55          *----------------------------------------------------------------------------
   56          * PARAMS:
@@ -126,7 +126,7 @@ line level    source
  114          * delay:    none
  115          * return:   Boolean. TRUE if the firmware can write a new byte to transmit.
  116          * FALSE oterwise.
-C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 3   
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/21/2016 23:11:23 PAGE 3   
 
  117          *----------------------------------------------------------------------------
  118          * PURPOSE: 
@@ -190,7 +190,7 @@ line level    source
  176   1        if(tx_counter >= TX_EP_SIZE-1) 
  177   1        {
  178   2        uart_usb_flush();
-C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/19/2016 17:02:24 PAGE 4   
+C51 COMPILER V9.53.0.0   UART_USB_LIB                                                      09/21/2016 23:11:23 PAGE 4   
 
  179   2        } 
  180   1        return data_to_send;

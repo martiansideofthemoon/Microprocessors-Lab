@@ -26,7 +26,8 @@
 /*_____ M A C R O S ________________________________________________________*/
 
 /*_____ D E F I N I T I O N ________________________________________________*/
-
+sbit LED5 = P1^4; //assigning label to P1^4 as "LED"
+int i = 0;
 bit   usb_connected;
 bit   flush_next_time;
 Uchar usb_sof_counter;
@@ -194,16 +195,24 @@ Uchar j;
     if (uart_usb_test_hit()) { Led_2_on(); uart_putchar(uart_usb_getchar()); Led_2_off(); }
   }
 #else                                     /* HELLO WORLD demo */
-
-  if (P3_2 == 0)
+	if (P3_2 == 0)
   {
+		if (test_hit())
+  { 
+	LED5 = ~LED5;
+	putchar ('a');
+		if (test_hit())
+			putchar(_getkey());
+	}
     Led_1_toggle();     		    /* Toggle LED 0 each time we print */
-    printf ("Hello World\r\n");   /* Print "Hello World" */
-
+    //printf ("Hello World\r\n");   /* Print "Hello World" */
   }
 
   if (test_hit())
-  { putchar (_getkey()); }
+  { 
+	//LED5 = ~LED5;
+	//putchar (_getkey());
+	}
 
 #endif
 
