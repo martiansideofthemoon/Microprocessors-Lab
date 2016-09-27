@@ -40,8 +40,8 @@ void ISR_Serial(void) interrupt 4 {
 		pointer++;
 		if (pointer < 16) {
 			ACC = string[pointer];
-			ACC += 1;
-			ACC -= 1;
+			//ACC += 1;
+			//ACC -= 1;
 			TB8 = PARITY;
 			SBUF = string[pointer];
 			LCD_CmdWrite(0xC0 + pointer);

@@ -8,7 +8,7 @@ void delayms(unsigned int ms_sec);
 void ISR_Serial(void) interrupt 4 {
 	LED = ~LED;
 	TI = 0;
-	SBUF = 'A';
+	SBUF = 0xAA;
 }
 
 void init_serial() {
@@ -19,13 +19,13 @@ void init_serial() {
 	// setting interrupts
 	ES = 1;
 	ET1 = 0;
-	ACC = 'A';
+	ACC = 0xAA;
 	// doing parity check
 	ACC += 1;
 	ACC -= 1;
 	TB8 = PARITY;
 	EA = 1;
-	SBUF = 'A';
+	SBUF = 0xAA;
 	// starting timer
 	TR1 = 1;
 }
