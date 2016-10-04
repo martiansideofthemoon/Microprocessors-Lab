@@ -17,7 +17,7 @@ void LCD_Ready();
 void sdelay(int delay);
 void delay_ms(int delay);
 char int_to_string(int val);
-void gen_sig(unsigned int frequency);
+//void gen_sig(unsigned int frequency);
 
 sbit square = P3^0;
 sbit CS_BAR = P1^4;									// Chip Select for the ADC
@@ -61,7 +61,7 @@ void main(void)
 	P0 &= 0xF0;											// Make Port 0 Pins 0,1,2 output
 	
 	SPI_Init();
-	LCD_Init();
+	//LCD_Init();
 	Timer_Init();
 	
 	while(1)												// endless 
@@ -122,28 +122,30 @@ void timer0_ISR (void) interrupt 1
 {
 	TF0 = 0;
 	//Initialize TH0
-	TH0 = 0x00;
+	TH0 = 0xfc;
 	//Initialize TL0
-	TL0 = 0x00;
+	TL0 = 0x18;
 	//Increment Overflow 
 	sample = (adcVal*5000.0/1024);
-	//Write averaging of 10 samples code here
-	//if (count % 30 == 0) {
-		//count = 0;
-		//LCD_Ready();
-		//LCD_CmdWrite(0x80);
-		if (sample < 1660 && previous != 1) {
-			previous = 1;
-			gen_sig(1);
-		}
-		else if (sample < 3300 && previous != 2) {
-			gen_sig(2);
-			previous = 2;
-		}
-		else if (previous != 3) {
-			previous = 3;
-			gen_sig(5);
-		}
+	
+	if (sample < 1660 && previous != 1) {
+		previous = 1;
+		high = 252;
+		low = 24;
+		//gen_sig(1);
+	}
+	else if (sample > 1660 && sample < 3300 && previous != 2) {
+		//gen_sig(2);
+		previous = 2;
+		high = 254;
+		low = 12;
+	}
+	else if (sample > 3300 && previous != 3) {
+		previous = 3;
+		high = 255;
+		low = 56;
+		//gen_sig(5);
+	}
 		//LCD_Ready();
 		//LCD_CmdWrite(0x80);
 		//voltage[3] = '0' + sample%10;
@@ -157,15 +159,15 @@ void timer0_ISR (void) interrupt 1
 		//LCD_StringWrite(" mV", 3);
 }
 
-void gen_sig(unsigned int frequency) {
+//void gen_sig(unsigned int frequency) {
 	//TR1 = 0;
-	counts = 1000 / frequency;
-	TH1 = 256 - (counts/256);
-	TL1 = 256 - count % 256;
-	high = TH1;
-	low = TL1;
-	TR1 = 1;
-}
+//	counts = 1000 / frequency;
+//	TH1 = 256 - (counts/256);
+//	TL1 = 256 - count % 256;
+//	high = TH1;
+//	low = TL1;
+//	TR1 = 1;
+//}
 
 
 /**
@@ -202,15 +204,22 @@ void Timer_Init()
     
 	//Initialize TH0
 	TH0 = 0xfc;
+	TH1 = 255;
+	high = 255;
+	previous = 3;
 	//Initialize TL0
 	TL0 = 0x18;
+	TL1 = 56;
+	low = 56;
 	//Configure TMOD 
 	TMOD = 0x11;
+	PTIL = 1;
 	//Set ET0
 	ET0 = 1;
 	ET1 = 1;
 	//Set TR0
 	TR0 = 1;
+	TR1 = 1;
 }
 	/**
  * FUNCTION_PURPOSE:LCD Initialization
